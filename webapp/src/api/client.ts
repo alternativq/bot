@@ -1,0 +1,129 @@
+/**
+ * HTTP-клиент для Backend API.
+ * Автоматически прикрепляет JWT-токен к каждому запросу.
+ */
+import type {
+  PaymentHistoryItem,
+  PaymentMethod,
+  Plan,
+  PurchaseResult,
+  ReferralInfo,
+  SubscriptionInfo,
+  UserProfile,
+} from '../types';
+
+const API_BASE = '/api/v1';
+
+let authToken: string | null = null;
+
+export function setAuthToken(token: string) {
+  authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
+/* ── Auth ── */
+
+export async function authenticate(initData: string): Promise<{ token: string; user: any }> {
+  return request('/auth', {
+    method: 'POST',
+    body: JSON.stringify({ initData }),
+  });
+}
+
+/* ── Profile ── */
+
+export async function getMe(): Promise<UserProfile> {
+  return request('/me');
+}
+
+/* ── Plans ── */
+
+export async function getPlans(): Promise<{ plans: Plan[]; trial_available: boolean }> {
+  return request('/plans');
+}
+
+/* ── Payment Methods ── */
+
+export async function getPaymentMethods(): Promise<{ methods: PaymentMethod[] }> {
+  return request('/payment-methods');
+}
+
+/* ── Purchase ── */
+
+export async function createPurchase(
+  planId: string,
+  methodId?: string,
+): Promise<PurchaseResult> {
+  return request('/purchase', {
+    method: 'POST',
+    body: JSON.stringify({ plan_id: planId, method_id: methodId }),
+  });
+}
+
+export async function markPaid(pendingId: number): Promise<{ status: string }> {
+  return request(`/purchase/${pendingId}/paid`, { method: 'POST' });
+}
+
+/* ── Subscription ── */
+
+export async function getSubscription(): Promise<{ subscription: SubscriptionInfo | null }> {
+  return request('/subscription');
+}
+
+export async function getSubscriptionQR(): Promise<{ qr_base64: string; sub_link: string }> {
+  return request('/subscription/qr');
+}
+
+/* ── Payments History ── */
+
+export async function getPaymentHistory(): Promise<{ payments: PaymentHistoryItem[] }> {
+  return request('/payments/history');
+}
+
+/* ── Promo ── */
+
+export async function applyPromo(code: string): Promise<{ success: boolean; message: string }> {
+  return request('/promo/apply', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function getReferral(): Promise<ReferralInfo> {
+  return request('/promo/referral');
+}
+
+/* ── Trial ── */
+
+export async function activateTrial(): Promise<{ status: string }> {
+  return request('/trial/activate', { method: 'POST' });
+}
