@@ -219,7 +219,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
             label: 'Поддержка в Telegram',
             action: () => {
               haptic('light');
-              tg?.openTelegramLink('https://t.me/your_support_bot');
+              tg?.openTelegramLink('https://t.me/unluckyqs');
             },
           },
         ].map((item, idx) => {
