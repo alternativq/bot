@@ -13,6 +13,7 @@ export function HomePage({ navigate }: HomePageProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -38,7 +39,9 @@ export function HomePage({ navigate }: HomePageProps) {
     if (!profile?.subscription?.sub_link) return;
     try {
       await navigator.clipboard.writeText(profile.subscription.sub_link);
+      setCopied(true);
       haptic('medium');
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       /* clipboard not available */
     }
@@ -47,12 +50,16 @@ export function HomePage({ navigate }: HomePageProps) {
   if (loading) {
     return (
       <div className="page">
-        <div style={{ marginBottom: 20 }}>
-          <div className="skeleton" style={{ width: '60%', height: 28, marginBottom: 8 }} />
-          <div className="skeleton" style={{ width: '40%', height: 16 }} />
+        <div style={{ marginBottom: 24 }}>
+          <div className="skeleton" style={{ width: '55%', height: 32, marginBottom: 10 }} />
+          <div className="skeleton" style={{ width: '35%', height: 16 }} />
         </div>
-        <div className="card skeleton" style={{ height: 180, marginBottom: 16 }} />
-        <div className="card skeleton" style={{ height: 60 }} />
+        <div className="skeleton" style={{ height: 200, marginBottom: 16, borderRadius: 18 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 76, borderRadius: 18 }} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -76,17 +83,20 @@ export function HomePage({ navigate }: HomePageProps) {
     <div className="page">
       {/* Header */}
       <div style={styles.header}>
-        <div>
-          <h1 style={styles.greeting}>Привет, {firstName}! 👋</h1>
-          <p style={styles.subtitle}>
-            ID: <span style={{ color: 'var(--link)' }}>{profile?.tg_id}</span>
-          </p>
-        </div>
+        <h1 style={styles.greeting}>
+          Привет, <span className="glow-text">{firstName}</span>! 👋
+        </h1>
+        <p style={styles.subtitle}>
+          ID: <span style={{ color: 'var(--link)', fontFamily: 'monospace' }}>{profile?.tg_id}</span>
+        </p>
       </div>
 
       {/* Subscription Card */}
       {sub ? (
-        <div className="card" style={styles.subCard}>
+        <div className="card card-accent" style={styles.subCard}>
+          {/* Glow orb */}
+          <div className="glow-orb" style={{ top: -40, right: -20 }} />
+
           <div style={styles.subHeader}>
             <div>
               <div style={styles.subPlan}>{sub.plan_title}</div>
@@ -131,14 +141,16 @@ export function HomePage({ navigate }: HomePageProps) {
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={copyLink}
+                style={copied ? { borderColor: 'rgba(52, 211, 153, 0.3)', color: 'var(--success)' } : {}}
               >
-                📋 Копировать
+                {copied ? '✓ Скопировано' : '📋 Копировать'}
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div className="card" style={styles.emptyCard}>
+        <div className="card card-accent" style={styles.emptyCard}>
+          <div className="glow-orb" style={{ top: -30, left: '50%', transform: 'translateX(-50%)' }} />
           <div style={styles.emptyIcon}>🛡️</div>
           <h3 style={styles.emptyTitle}>Нет активной подписки</h3>
           <p style={styles.emptyText}>
@@ -151,7 +163,7 @@ export function HomePage({ navigate }: HomePageProps) {
               navigate('plans');
             }}
           >
-            Выбрать тариф
+            Выбрать тариф →
           </button>
         </div>
       )}
@@ -160,60 +172,40 @@ export function HomePage({ navigate }: HomePageProps) {
       <div style={styles.quickActions}>
         <p className="section-title">Быстрые действия</p>
         <div style={styles.actionGrid}>
-          <button
-            className="card"
-            style={styles.actionCard}
-            onClick={() => {
-              haptic();
-              navigate('plans');
-            }}
-          >
-            <span style={styles.actionIcon}>📋</span>
-            <span style={styles.actionLabel}>Тарифы</span>
-          </button>
-          <button
-            className="card"
-            style={styles.actionCard}
-            onClick={() => {
-              haptic();
-              navigate('subscription');
-            }}
-          >
-            <span style={styles.actionIcon}>🔑</span>
-            <span style={styles.actionLabel}>VPN</span>
-          </button>
-          <button
-            className="card"
-            style={styles.actionCard}
-            onClick={() => {
-              haptic();
-              navigate('faq');
-            }}
-          >
-            <span style={styles.actionIcon}>❓</span>
-            <span style={styles.actionLabel}>FAQ</span>
-          </button>
-          <button
-            className="card"
-            style={styles.actionCard}
-            onClick={() => {
-              haptic();
-              navigate('settings');
-            }}
-          >
-            <span style={styles.actionIcon}>⚙️</span>
-            <span style={styles.actionLabel}>Ещё</span>
-          </button>
+          {[
+            { icon: '📋', label: 'Тарифы', page: 'plans' as Page },
+            { icon: '🔑', label: 'VPN', page: 'subscription' as Page },
+            { icon: '❓', label: 'FAQ', page: 'faq' as Page },
+            { icon: '⚙️', label: 'Ещё', page: 'settings' as Page },
+          ].map((item) => (
+            <button
+              key={item.page}
+              className="card"
+              style={styles.actionCard}
+              onClick={() => {
+                haptic();
+                navigate(item.page);
+              }}
+            >
+              <span style={styles.actionIcon}>{item.icon}</span>
+              <span style={styles.actionLabel}>{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Discount badge */}
       {profile && profile.discount_percent > 0 && (
-        <div className="card" style={{ marginTop: 16, textAlign: 'center' }}>
+        <div className="card" style={styles.discountCard}>
           <span style={{ fontSize: 24 }}>🎁</span>
-          <p style={{ fontWeight: 600, marginTop: 4 }}>
-            Активная скидка: {profile.discount_percent}%
-          </p>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: 15 }}>
+              Скидка <span className="glow-text">{profile.discount_percent}%</span>
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              Применяется к следующей покупке
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -222,76 +214,96 @@ export function HomePage({ navigate }: HomePageProps) {
 
 const styles: Record<string, React.CSSProperties> = {
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 700,
+    fontSize: 26,
+    fontWeight: 800,
     marginBottom: 4,
+    letterSpacing: '-0.02em',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'var(--text-secondary)',
   },
   subCard: {
-    marginBottom: 20,
-    background: 'linear-gradient(135deg, rgba(108, 92, 231, 0.12), rgba(162, 155, 254, 0.06))',
-    borderColor: 'rgba(108, 92, 231, 0.2)',
+    marginBottom: 24,
+    position: 'relative' as const,
+    overflow: 'hidden',
   },
   subHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
+    position: 'relative' as const,
+    zIndex: 2,
   },
   subPlan: {
-    fontSize: 18,
-    fontWeight: 700,
-    marginBottom: 6,
+    fontSize: 20,
+    fontWeight: 800,
+    marginBottom: 8,
+    letterSpacing: '-0.01em',
   },
   daysLeft: {
     textAlign: 'center' as const,
     background: 'var(--gradient-accent)',
-    borderRadius: 'var(--radius-sm)',
-    padding: '8px 16px',
-    minWidth: 64,
+    borderRadius: '14px',
+    padding: '10px 20px',
+    minWidth: 70,
+    boxShadow: '0 4px 20px rgba(124, 108, 240, 0.3)',
   },
   daysNumber: {
     display: 'block',
-    fontSize: 24,
-    fontWeight: 700,
+    fontSize: 26,
+    fontWeight: 800,
     lineHeight: 1,
     color: '#fff',
   },
   daysLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: 500,
   },
   subInfo: {
     marginBottom: 16,
+    position: 'relative' as const,
+    zIndex: 2,
   },
   actions: {
     display: 'flex',
     gap: 8,
+    position: 'relative' as const,
+    zIndex: 2,
   },
   emptyCard: {
     textAlign: 'center' as const,
-    padding: '32px 20px',
-    marginBottom: 20,
+    padding: '36px 24px',
+    marginBottom: 24,
+    position: 'relative' as const,
+    overflow: 'hidden',
   },
   emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
+    fontSize: 52,
+    marginBottom: 16,
+    filter: 'drop-shadow(0 0 20px rgba(124, 108, 240, 0.2))',
+    position: 'relative' as const,
+    zIndex: 2,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: 700,
+    fontSize: 20,
+    fontWeight: 800,
     marginBottom: 8,
+    position: 'relative' as const,
+    zIndex: 2,
   },
   emptyText: {
     color: 'var(--text-secondary)',
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: 24,
+    lineHeight: '1.5',
+    position: 'relative' as const,
+    zIndex: 2,
   },
   quickActions: {
     marginTop: 4,
@@ -306,18 +318,29 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '16px 8px',
+    padding: '18px 8px',
     cursor: 'pointer',
     border: 'none',
     fontFamily: 'inherit',
   },
   actionIcon: {
-    fontSize: 24,
+    fontSize: 26,
     marginBottom: 6,
+    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
   },
   actionLabel: {
-    fontSize: 12,
-    fontWeight: 500,
+    fontSize: 11,
+    fontWeight: 600,
     color: 'var(--text-secondary)',
+    letterSpacing: '0.01em',
+  },
+  discountCard: {
+    marginTop: 16,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    padding: '16px 20px',
+    borderColor: 'rgba(52, 211, 153, 0.15)',
+    background: 'rgba(52, 211, 153, 0.04)',
   },
 };

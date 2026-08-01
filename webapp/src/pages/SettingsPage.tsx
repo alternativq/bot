@@ -65,27 +65,29 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
 
   return (
     <div className="page">
-      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Настройки</h2>
+      <h2 style={styles.pageTitle}>Настройки</h2>
 
       {/* Profile info */}
       {profile && (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <div className="info-row">
-            <span className="label">Telegram ID</span>
-            <span className="value" style={{ color: 'var(--link)', fontFamily: 'monospace' }}>
-              {profile.tg_id}
-            </span>
-          </div>
-          {profile.username && (
-            <div className="info-row">
-              <span className="label">Username</span>
-              <span className="value">@{profile.username}</span>
+        <div className="card card-accent" style={{ marginBottom: 16 }}>
+          <div className="glow-orb" style={{ top: -40, right: -20 }} />
+          <div style={styles.profileHeader}>
+            <div style={styles.avatar}>
+              {profile.username ? profile.username[0].toUpperCase() : '👤'}
             </div>
-          )}
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <div style={styles.profileName}>
+                {profile.username ? `@${profile.username}` : 'Пользователь'}
+              </div>
+              <div style={styles.profileId}>
+                ID: <span style={{ color: 'var(--link)', fontFamily: 'monospace' }}>{profile.tg_id}</span>
+              </div>
+            </div>
+          </div>
           {profile.discount_percent > 0 && (
-            <div className="info-row">
-              <span className="label">Активная скидка</span>
-              <span className="value" style={{ color: 'var(--success)' }}>
+            <div style={styles.discountRow}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Скидка</span>
+              <span className="glow-text" style={{ fontWeight: 700, fontSize: 16 }}>
                 {profile.discount_percent}%
               </span>
             </div>
@@ -95,11 +97,11 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
 
       {/* Referral */}
       {referral && (
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 16 }}>
           <p className="section-title">🎁 Реферальная программа</p>
           <div className="card" style={{ padding: 16 }}>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
-              Пригласите друга — при его первой покупке вы получите +5 дней бонусом
+            <p style={styles.refDesc}>
+              Пригласите друга — при его первой покупке вы получите <strong style={{ color: 'var(--success)' }}>+5 дней</strong> бонусом
             </p>
             <div className="copy-field" style={{ margin: 0 }}>
               <code>{referral.referral_link}</code>
@@ -115,7 +117,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
       )}
 
       {/* Promo code input */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 16 }}>
         <p className="section-title">🏷️ Промокод</p>
         <div className="card" style={{ padding: 16 }}>
           <div style={styles.promoRow}>
@@ -131,6 +133,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
               className="btn btn-primary btn-sm"
               onClick={handleApplyPromo}
               disabled={promoLoading || !promoInput.trim()}
+              style={promoLoading || !promoInput.trim() ? { opacity: 0.5 } : {}}
             >
               {promoLoading ? '...' : 'OK'}
             </button>
@@ -138,40 +141,45 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
           {promoResult && (
             <div
               style={{
-                marginTop: 8,
+                marginTop: 10,
                 fontSize: 13,
                 color: promoResult.ok ? 'var(--success)' : 'var(--danger)',
+                fontWeight: 600,
               }}
             >
-              {promoResult.msg}
+              {promoResult.ok ? '✓ ' : '✗ '}{promoResult.msg}
             </div>
           )}
         </div>
       </div>
 
       {/* Navigation links */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 16 }}>
         <p className="section-title">Навигация</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <button className="card" style={styles.menuItem} onClick={() => navigate('faq')}>
-            <span>❓ Частые вопросы</span>
-            <span style={{ color: 'var(--text-secondary)' }}>→</span>
-          </button>
-          <button className="card" style={styles.menuItem} onClick={() => navigate('history')}>
-            <span>📜 История платежей</span>
-            <span style={{ color: 'var(--text-secondary)' }}>→</span>
-          </button>
-          <button
-            className="card"
-            style={styles.menuItem}
-            onClick={() => {
-              haptic();
-              tg?.openTelegramLink('https://t.me/your_support_bot');
-            }}
-          >
-            <span>💬 Поддержка</span>
-            <span style={{ color: 'var(--text-secondary)' }}>→</span>
-          </button>
+          {[
+            { icon: '❓', label: 'Частые вопросы', action: () => navigate('faq') },
+            { icon: '📜', label: 'История платежей', action: () => navigate('history') },
+            {
+              icon: '💬',
+              label: 'Поддержка',
+              action: () => {
+                haptic();
+                tg?.openTelegramLink('https://t.me/your_support_bot');
+              },
+            },
+          ].map((item, idx) => (
+            <button
+              key={idx}
+              className="card"
+              style={styles.menuItem}
+              onClick={item.action}
+            >
+              <div style={styles.menuIcon}>{item.icon}</div>
+              <span style={styles.menuLabel}>{item.label}</span>
+              <span style={styles.menuArrow}>→</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -179,6 +187,59 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: 800,
+    marginBottom: 20,
+    letterSpacing: '-0.02em',
+  },
+  profileHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 4,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    background: 'var(--gradient-accent)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 20,
+    fontWeight: 700,
+    color: '#fff',
+    boxShadow: '0 4px 16px rgba(124, 108, 240, 0.3)',
+    flexShrink: 0,
+    position: 'relative' as const,
+    zIndex: 2,
+  },
+  profileName: {
+    fontWeight: 700,
+    fontSize: 17,
+    marginBottom: 2,
+  },
+  profileId: {
+    fontSize: 12,
+    color: 'var(--text-secondary)',
+  },
+  discountRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTop: '1px solid var(--divider)',
+    position: 'relative' as const,
+    zIndex: 2,
+  },
+  refDesc: {
+    fontSize: 14,
+    color: 'var(--text-secondary)',
+    marginBottom: 14,
+    lineHeight: '1.5',
+  },
   promoRow: {
     display: 'flex',
     gap: 8,
@@ -186,20 +247,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   promoInput: {
     flex: 1,
-    padding: '10px 14px',
-    background: 'var(--bg-secondary)',
+    padding: '12px 16px',
+    background: 'rgba(0, 0, 0, 0.25)',
     border: '1px solid var(--glass-border)',
     borderRadius: 'var(--radius-sm)',
     color: 'var(--text-primary)',
     fontSize: 15,
     fontFamily: 'inherit',
     outline: 'none',
+    transition: 'border-color 0.2s ease',
   },
   menuItem: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '14px 16px',
+    gap: 12,
+    padding: '14px 18px',
     cursor: 'pointer',
     border: 'none',
     width: '100%',
@@ -207,5 +269,25 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 15,
     color: 'var(--text-primary)',
     textAlign: 'left' as const,
+  },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    background: 'var(--glass-bg)',
+    border: '1px solid var(--glass-border)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 16,
+    flexShrink: 0,
+  },
+  menuLabel: {
+    flex: 1,
+    fontWeight: 600,
+  },
+  menuArrow: {
+    color: 'var(--text-secondary)',
+    fontSize: 16,
   },
 };

@@ -8,12 +8,12 @@ interface HistoryPageProps {
   navigate: (page: Page) => void;
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
-  manual: '💳 Ручная',
-  trial: '🎁 Пробный',
-  crypto: '💎 CryptoBot',
-  yoomoney: '💳 ЮMoney',
-  stars: '⭐ Stars',
+const PROVIDER_ICONS: Record<string, string> = {
+  manual: '💳',
+  trial: '🎁',
+  crypto: '💎',
+  yoomoney: '🟣',
+  stars: '⭐',
 };
 
 export function HistoryPage({ navigate }: HistoryPageProps) {
@@ -43,9 +43,9 @@ export function HistoryPage({ navigate }: HistoryPageProps) {
   if (loading) {
     return (
       <div className="page">
-        <div className="skeleton" style={{ height: 28, width: '50%', marginBottom: 20 }} />
+        <div className="skeleton" style={{ height: 32, width: '50%', marginBottom: 24 }} />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="card skeleton" style={{ height: 72, marginBottom: 8 }} />
+          <div key={i} className="skeleton" style={{ height: 76, marginBottom: 8, borderRadius: 18 }} />
         ))}
       </div>
     );
@@ -53,7 +53,7 @@ export function HistoryPage({ navigate }: HistoryPageProps) {
 
   return (
     <div className="page">
-      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>История платежей</h2>
+      <h2 style={styles.pageTitle}>История платежей</h2>
 
       {payments.length === 0 ? (
         <div className="empty-state">
@@ -63,28 +63,40 @@ export function HistoryPage({ navigate }: HistoryPageProps) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {payments.map((payment) => (
-            <div key={payment.id} className="card" style={styles.paymentCard}>
-              <div style={styles.paymentRow}>
-                <div>
-                  <div style={styles.paymentPlan}>{payment.plan_title}</div>
-                  <div style={styles.paymentMeta}>
-                    {PROVIDER_LABELS[payment.provider] || payment.provider}
-                    {payment.created_at && (
-                      <>
-                        {' · '}
-                        {new Date(payment.created_at).toLocaleDateString('ru-RU', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                        })}
-                      </>
-                    )}
-                  </div>
+          {payments.map((payment, idx) => (
+            <div
+              key={payment.id}
+              className="card"
+              style={{
+                ...styles.paymentCard,
+                animationDelay: `${idx * 0.05}s`,
+              }}
+            >
+              <div style={styles.paymentIcon}>
+                {PROVIDER_ICONS[payment.provider] || '💳'}
+              </div>
+              <div style={styles.paymentInfo}>
+                <div style={styles.paymentPlan}>{payment.plan_title}</div>
+                <div style={styles.paymentMeta}>
+                  {payment.provider}
+                  {payment.created_at && (
+                    <>
+                      {' · '}
+                      {new Date(payment.created_at).toLocaleDateString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </>
+                  )}
                 </div>
-                <div style={styles.paymentAmount}>
-                  {payment.amount_rub > 0 ? `${payment.amount_rub} ₽` : 'Бесплатно'}
-                </div>
+              </div>
+              <div style={styles.paymentAmount}>
+                {payment.amount_rub > 0 ? (
+                  <span className="glow-text">{payment.amount_rub} ₽</span>
+                ) : (
+                  <span style={{ color: 'var(--success)' }}>Бесплатно</span>
+                )}
               </div>
             </div>
           ))}
@@ -95,27 +107,48 @@ export function HistoryPage({ navigate }: HistoryPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  paymentCard: {
-    padding: 16,
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: 800,
+    marginBottom: 20,
+    letterSpacing: '-0.02em',
   },
-  paymentRow: {
+  paymentCard: {
+    padding: '16px 18px',
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 14,
+    animation: 'pageIn 0.3s var(--ease) both',
+  },
+  paymentIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    background: 'var(--glass-bg)',
+    border: '1px solid var(--glass-border)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 20,
+    flexShrink: 0,
+  },
+  paymentInfo: {
+    flex: 1,
+    minWidth: 0,
   },
   paymentPlan: {
     fontSize: 15,
-    fontWeight: 600,
+    fontWeight: 700,
     marginBottom: 2,
   },
   paymentMeta: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'var(--text-secondary)',
   },
   paymentAmount: {
     fontSize: 16,
-    fontWeight: 700,
-    color: 'var(--accent)',
+    fontWeight: 800,
     whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
   },
 };

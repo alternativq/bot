@@ -88,29 +88,38 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
   if (loading) {
     return (
       <div className="page">
-        <div className="skeleton" style={{ height: 28, width: '50%', marginBottom: 20 }} />
-        <div className="tabs skeleton" style={{ height: 44, marginBottom: 16 }} />
+        <div className="skeleton" style={{ height: 32, width: '50%', marginBottom: 24 }} />
+        <div className="skeleton" style={{ height: 44, marginBottom: 20, borderRadius: 12 }} />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="card skeleton" style={{ height: 80, marginBottom: 8 }} />
+          <div key={i} className="skeleton" style={{ height: 84, marginBottom: 8, borderRadius: 18 }} />
         ))}
       </div>
     );
   }
 
-  // Если выбран план — показываем способы оплаты
+  // Method selection view
   if (selectedPlan) {
     return (
       <div className="page">
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Способ оплаты</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 14 }}>
-          Тариф: <strong>{selectedPlan.title}</strong> — {selectedPlan.price_rub} ₽
-        </p>
+        <h2 style={styles.pageTitle}>Способ оплаты</h2>
+        <div className="card" style={{ marginBottom: 20, padding: '16px 20px' }}>
+          <div style={styles.selectedPlanRow}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Тариф</span>
+            <span style={{ fontWeight: 700 }}>{selectedPlan.title}</span>
+          </div>
+          <div style={styles.selectedPlanRow}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Сумма</span>
+            <span className="glow-text" style={{ fontWeight: 800, fontSize: 18 }}>
+              {selectedPlan.price_rub} ₽
+            </span>
+          </div>
+        </div>
 
         {methods.length === 0 ? (
           <div className="empty-state">
             <div className="icon">💳</div>
             <div className="title">Нет способов оплаты</div>
-            <p>Способы оплаты пока не настроены администратором</p>
+            <p>Способы оплаты пока не настроены</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -121,8 +130,12 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
                 style={styles.methodCard}
                 onClick={() => handleSelectMethod(selectedPlan, method)}
               >
-                <div style={styles.methodTitle}>{method.title}</div>
-                <div style={styles.methodDesc}>{method.requisite_label}</div>
+                <div style={styles.methodIcon}>💳</div>
+                <div>
+                  <div style={styles.methodTitle}>{method.title}</div>
+                  <div style={styles.methodDesc}>{method.requisite_label}</div>
+                </div>
+                <span style={styles.methodArrow}>→</span>
               </button>
             ))}
           </div>
@@ -144,7 +157,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
 
   return (
     <div className="page">
-      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Выберите тариф</h2>
+      <h2 style={styles.pageTitle}>Выберите тариф</h2>
 
       {/* Trial */}
       {trialAvailable && trialPlan && (
@@ -154,12 +167,13 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
           onClick={handleActivateTrial}
           disabled={trialLoading}
         >
+          <div className="glow-orb" style={{ top: -40, right: -20, background: 'radial-gradient(circle, rgba(52, 211, 153, 0.3), transparent 70%)' }} />
           <div style={styles.trialBadge}>🎁 БЕСПЛАТНО</div>
           <div style={styles.trialTitle}>{trialPlan.title}</div>
           <div style={styles.trialDesc}>
             {trialPlan.duration_days} дней · Без оплаты · Один раз
           </div>
-          {trialLoading && <div style={{ marginTop: 8, fontSize: 13 }}>Активация...</div>}
+          {trialLoading && <div style={{ marginTop: 8, fontSize: 13, color: 'var(--success)' }}>Активация...</div>}
         </button>
       )}
 
@@ -201,8 +215,10 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
                 </div>
               </div>
               <div style={styles.planPrice}>
-                <span style={styles.priceAmount}>{plan.price_rub}</span>
-                <span style={styles.priceCurrency}> ₽</span>
+                <span className="glow-text" style={{ fontSize: 24, fontWeight: 800 }}>
+                  {plan.price_rub}
+                </span>
+                <span style={{ fontSize: 14, color: 'var(--text-secondary)', marginLeft: 2 }}>₽</span>
               </div>
             </div>
           </button>
@@ -213,35 +229,56 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: 800,
+    marginBottom: 20,
+    letterSpacing: '-0.02em',
+  },
+  selectedPlanRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+  },
   trialCard: {
-    marginBottom: 16,
+    marginBottom: 20,
     textAlign: 'center' as const,
-    background: 'linear-gradient(135deg, rgba(0, 184, 148, 0.12), rgba(0, 184, 148, 0.04))',
-    borderColor: 'rgba(0, 184, 148, 0.2)',
+    background: 'rgba(52, 211, 153, 0.04)',
+    borderColor: 'rgba(52, 211, 153, 0.15)',
     cursor: 'pointer',
-    border: 'none',
+    border: '1px solid rgba(52, 211, 153, 0.15)',
     width: '100%',
     fontFamily: 'inherit',
     color: 'var(--text-primary)',
+    position: 'relative' as const,
+    overflow: 'hidden',
   },
   trialBadge: {
     display: 'inline-block',
-    padding: '4px 12px',
-    background: 'rgba(0, 184, 148, 0.2)',
+    padding: '5px 14px',
+    background: 'rgba(52, 211, 153, 0.12)',
     borderRadius: 100,
     fontSize: 12,
     fontWeight: 700,
     color: 'var(--success)',
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: '0.05em',
+    position: 'relative' as const,
+    zIndex: 2,
   },
   trialTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 700,
     marginBottom: 4,
+    position: 'relative' as const,
+    zIndex: 2,
   },
   trialDesc: {
     fontSize: 13,
     color: 'var(--text-secondary)',
+    position: 'relative' as const,
+    zIndex: 2,
   },
   planCard: {
     cursor: 'pointer',
@@ -258,8 +295,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   planDevices: {
     fontSize: 16,
-    fontWeight: 600,
-    marginBottom: 2,
+    fontWeight: 700,
+    marginBottom: 3,
   },
   planDuration: {
     fontSize: 13,
@@ -267,17 +304,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   planPrice: {
     textAlign: 'right' as const,
-  },
-  priceAmount: {
-    fontSize: 22,
-    fontWeight: 700,
-    background: 'var(--gradient-accent)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  },
-  priceCurrency: {
-    fontSize: 14,
-    color: 'var(--text-secondary)',
+    display: 'flex',
+    alignItems: 'baseline',
   },
   methodCard: {
     cursor: 'pointer',
@@ -286,15 +314,35 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'inherit',
     color: 'var(--text-primary)',
     textAlign: 'left' as const,
-    padding: 16,
+    padding: '16px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+  },
+  methodIcon: {
+    fontSize: 24,
+    width: 44,
+    height: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'var(--glass-bg)',
+    borderRadius: 12,
+    border: '1px solid var(--glass-border)',
+    flexShrink: 0,
   },
   methodTitle: {
-    fontSize: 16,
-    fontWeight: 600,
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: 700,
+    marginBottom: 2,
   },
   methodDesc: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'var(--text-secondary)',
+  },
+  methodArrow: {
+    marginLeft: 'auto',
+    color: 'var(--text-secondary)',
+    fontSize: 18,
   },
 };
