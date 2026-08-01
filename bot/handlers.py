@@ -4,7 +4,7 @@ import logging
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandObject
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from sqlalchemy import select
 
 from bot import keyboards, texts
@@ -45,7 +45,7 @@ async def cmd_start(message: Message, command: CommandObject | None = None) -> N
 
     await message.answer(
         texts.WELCOME,
-        reply_markup=keyboards.main_menu_keyboard(),
+        reply_markup=ReplyKeyboardRemove(),
     )
     await message.answer(
         "👇 Открыть личный кабинет и каталог:",

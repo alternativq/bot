@@ -23,18 +23,7 @@ def _is_valid_webapp_url(url: str) -> bool:
     return True
 
 
-def main_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Постоянная кнопка внизу экрана для открытия Mini App."""
-    url = settings.webapp_url
-    if _is_valid_webapp_url(url):
-        btn = KeyboardButton(text=BTN_OPEN_APP, web_app=WebAppInfo(url=url))
-    else:
-        btn = KeyboardButton(text=BTN_OPEN_APP)
 
-    return ReplyKeyboardMarkup(
-        keyboard=[[btn]],
-        resize_keyboard=True,
-    )
 
 
 def open_app_keyboard() -> InlineKeyboardMarkup:

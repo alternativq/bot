@@ -92,7 +92,7 @@ body {
 .page {
   flex: 1;
   padding: calc(12px + var(--safe-top)) 14px calc(var(--nav-height) + var(--safe-bottom) + 28px);
-  animation: pageFade 0.24s var(--ease-out);
+  animation: pageFade 0.42s var(--ease-out);
   width: 100%;
 }
 
@@ -198,7 +198,7 @@ body {
 .noir-ticker-track {
   display: inline-flex;
   gap: 16px;
-  animation: tickerMove 22s linear infinite;
+  animation: tickerMove 38s linear infinite;
 }
 
 .noir-ticker-item {

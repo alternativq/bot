@@ -102,7 +102,7 @@ export function HomePage({ navigate }: HomePageProps) {
       <div className="noir-header">
         <div className="noir-header-left">
           <div className="noir-logo-box">
-            <ShieldCheck size={26} />
+            <img src="/logo.jpg" alt="VeiloraVPN" style={{ width: '100%', height: '100%', borderRadius: 14, objectFit: 'cover' }} />
           </div>
           <div>
             <div className="noir-header-title">VEILORA VPN</div>

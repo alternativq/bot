@@ -10,7 +10,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Zap,
-  Flame,
   Shield,
 } from 'lucide-react';
 
@@ -186,7 +185,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
       <div className="noir-header">
         <div className="noir-header-left">
           <div className="noir-logo-box">
-            <Flame size={24} />
+            <img src="/logo.jpg" alt="VeiloraVPN" style={{ width: '100%', height: '100%', borderRadius: 14, objectFit: 'cover' }} />
           </div>
           <div>
             <div className="noir-header-title">КАТАЛОГ ТАРИФОВ</div>
