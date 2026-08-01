@@ -23,7 +23,7 @@ interface SettingsPageProps {
 }
 
 export function SettingsPage({ navigate }: SettingsPageProps) {
-  const { tg, haptic, showBackButton, hideBackButton } = useTelegram();
+  const { tg, user, haptic, showBackButton, hideBackButton } = useTelegram();
   const { showToast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [referral, setReferral] = useState<ReferralInfo | null>(null);
@@ -99,8 +99,14 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
       {profile && (
         <div className="card card-accent" style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 46, height: 46, borderRadius: 14, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900 }}>
-              {profile.username ? profile.username[0].toUpperCase() : <User size={22} />}
+            <div style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.16)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, overflow: 'hidden' }}>
+              {user?.photo_url ? (
+                <img src={user.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : profile.username ? (
+                profile.username[0].toUpperCase()
+              ) : (
+                <User size={22} />
+              )}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 850, color: '#ffffff', marginBottom: 2 }}>

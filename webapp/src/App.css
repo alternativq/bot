@@ -127,12 +127,13 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: #ffffff;
-  color: #000000;
+  background: #070709;
+  border: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
   transition: transform 0.2s var(--ease-spring);
 }
