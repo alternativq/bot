@@ -126,7 +126,7 @@ export function HomePage({ navigate }: HomePageProps) {
         <div className="noir-ticker-track">
           {[1, 2].map((k) => (
             <span key={k} className="noir-ticker-item">
-              ✦ ПРЕМИАЛЬНЫЙ VPN + БЕЗЛИМИТНЫЙ ТРАФИК + МГНОВЕННАЯ ВЫДАЧА + 100 GBIT/S СКОРОСТЬ ✦
+              ✦ ПРЕМИАЛЬНЫЙ VPN + БЕЗЛИМИТНЫЙ ТРАФИК + МГНОВЕННАЯ ВЫДАЧА + 1000 МБ/С СКОРОСТЬ ✦
             </span>
           ))}
         </div>

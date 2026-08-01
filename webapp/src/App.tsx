@@ -51,7 +51,7 @@ export default function App() {
         <div style={stubStyles.card}>
           <h2 style={stubStyles.title}>Технические работы</h2>
           <p style={stubStyles.text}>
-            Данный ресурс недоступен для прямого просмотра. Откройте приложение в Telegram.
+            Данный ресурс недоступен для прямого просмотра.
           </p>
         </div>
       </div>
