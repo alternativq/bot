@@ -50,11 +50,8 @@ async def main() -> None:
         log.info("Bot API запросы пойдут через прокси %s", settings.BOT_PROXY_URL.split("@")[-1])
     bot = Bot(token=settings.BOT_TOKEN, session=session, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     await bot.set_my_commands([
-        BotCommand(command="start", description="Начало / главное меню"),
-        BotCommand(command="plans", description="Тарифы"),
-        BotCommand(command="subscription", description="Моя подписка"),
-        BotCommand(command="help", description="Помощь"),
-        BotCommand(command="promo", description="Промокоды и рефералы"),
+        BotCommand(command="start", description="🚀 Открыть VeiloraVPN App"),
+        BotCommand(command="help", description="🆘 Помощь"),
     ])
     dp = Dispatcher()
     dp.include_router(router)

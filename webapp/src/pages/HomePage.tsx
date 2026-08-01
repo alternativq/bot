@@ -105,7 +105,7 @@ export function HomePage({ navigate }: HomePageProps) {
             <ShieldCheck size={26} />
           </div>
           <div>
-            <div className="noir-header-title">NOIR VPN</div>
+            <div className="noir-header-title">VEILORA VPN</div>
             <div className="noir-header-sub">ПОЛЬЗОВАТЕЛЬ · {firstName.toUpperCase()}</div>
           </div>
         </div>

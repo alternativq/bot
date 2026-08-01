@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     SUB_SERVER_PORT: int = 8081
     # имя, которое клиент (Happ и т.п.) покажет как название подписки
     # (без этого некоторые приложения показывают домен вместо названия)
-    BRAND_NAME: str = "My VPN"
+    BRAND_NAME: str = "VeiloraVPN"
     # как часто клиент должен сам обновлять список серверов (часы)
     SUB_UPDATE_INTERVAL_HOURS: int = 12
 
@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     @property
     def admin_ids(self) -> list[int]:
         return [int(x) for x in self.ADMIN_IDS.split(",") if x.strip()]
+
+    @property
+    def webapp_url(self) -> str:
+        if self.MINIAPP_URL:
+            return self.MINIAPP_URL
+        if self.PUBLIC_SUB_BASE_URL:
+            return self.PUBLIC_SUB_BASE_URL.rstrip('/')
+        return "https://t.me"
 
     @property
     def unified_subscription_enabled(self) -> bool:
