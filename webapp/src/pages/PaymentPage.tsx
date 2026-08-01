@@ -41,7 +41,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
         const data = await createPurchase(planId, methodId);
         setResult(data);
         if (data.status === 'activated') {
-          showToast('Подписка успешно активирована!', 'success');
+          showToast('Подписка активирована!', 'success');
           navigate('subscription');
           return;
         }
@@ -92,9 +92,8 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
   if (loading) {
     return (
       <div className="page">
-        <div className="skeleton" style={{ height: 32, width: '45%', marginBottom: 20 }} />
-        <div className="skeleton" style={{ height: 180, borderRadius: 20, marginBottom: 16 }} />
-        <div className="skeleton" style={{ height: 48, borderRadius: 14 }} />
+        <div className="skeleton" style={{ height: 40, width: '45%', marginBottom: 16 }} />
+        <div className="skeleton" style={{ height: 180, borderRadius: 20 }} />
       </div>
     );
   }
@@ -103,14 +102,14 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
     return (
       <div className="page">
         <div className="empty-state">
-          <div className="icon" style={{ color: 'var(--danger)' }}>
+          <div className="icon">
             <AlertTriangle size={32} />
           </div>
           <div className="title">Не удалось создать заказ</div>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{error}</p>
           <button
             className="btn btn-primary"
-            style={{ marginTop: 20 }}
+            style={{ marginTop: 16 }}
             onClick={() => {
               haptic('medium');
               navigate('plans');
@@ -126,19 +125,18 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
   if (notified) {
     return (
       <div className="page">
-        <div style={styles.successContainer}>
-          <div style={styles.successGlow} />
-          <div style={styles.successIconWrapper}>
-            <CheckCircle2 size={56} style={{ color: 'var(--success)' }} />
+        <div style={{ textAlign: 'center', padding: '40px 16px' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <CheckCircle2 size={44} />
           </div>
-          <h2 style={styles.successTitle}>Оплата зарегистрирована!</h2>
-          <p style={styles.successText}>
-            Администратор получил уведомление. После подтверждения подписка и ключи придут
-            автоматически в диалог с ботом.
+          <div style={{ fontSize: 20, fontWeight: 850, color: '#ffffff', marginBottom: 8 }}>
+            Оплата зарегистрирована!
+          </div>
+          <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 24 }}>
+            Администратор получил уведомление. После подтверждения подписка придет автоматически в бот.
           </p>
           <button
             className="btn btn-primary btn-block"
-            style={{ marginTop: 28 }}
             onClick={() => {
               haptic('medium');
               navigate('home');
@@ -155,22 +153,20 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
 
   return (
     <div className="page">
-      <div style={styles.headerRow}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <button
-          className="btn btn-secondary btn-icon"
+          className="noir-icon-btn"
           onClick={() => {
             haptic('light');
             navigate('plans');
           }}
-          style={{ width: 36, height: 36 }}
         >
           <ArrowLeft size={18} />
         </button>
-        <h2 style={{ ...styles.pageTitle, marginBottom: 0 }}>Оформление оплаты</h2>
+        <div style={{ fontSize: 18, fontWeight: 850, color: '#ffffff' }}>Оформление оплаты</div>
       </div>
 
-      {/* Order Summary Card */}
-      <div className="card card-accent" style={{ marginBottom: 16, marginTop: 16 }}>
+      <div className="card card-accent" style={{ marginBottom: 16 }}>
         <div className="info-row">
           <span className="label">Тариф</span>
           <span className="value">{result.plan_title}</span>
@@ -178,12 +174,10 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
 
         <div className="info-row">
           <span className="label">Сумма к оплате</span>
-          <span className="value">
-            <span className="glow-text" style={{ fontSize: 20, fontWeight: 800 }}>
-              {result.amount_rub} ₽
-            </span>
+          <span className="value" style={{ fontSize: 20, fontWeight: 850, color: '#ffffff' }}>
+            {result.amount_rub} ₽
             {result.discount_percent > 0 && (
-              <span className="badge badge-success" style={{ marginLeft: 8 }}>
+              <span className="noir-badge" style={{ marginLeft: 8 }}>
                 -{result.discount_percent}%
               </span>
             )}
@@ -193,66 +187,56 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
         {result.order_code && (
           <div className="info-row">
             <span className="label">Код заказа</span>
-            <span
-              className="value"
-              style={{
-                color: 'var(--warning)',
-                fontFamily: 'JetBrains Mono, monospace',
-                letterSpacing: '0.05em',
-              }}
-            >
+            <span className="value" style={{ fontFamily: 'JetBrains Mono', color: '#ffffff' }}>
               {result.order_code}
             </span>
           </div>
         )}
       </div>
 
-      {/* Direct Gateway Payment URL */}
       {result.payment_url && (
         <button
           className="btn btn-primary btn-block"
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 14 }}
           onClick={handleOpenPayment}
         >
-          <ExternalLink size={18} />
+          <ExternalLink size={16} />
           Перейти к оплате ({result.amount_rub} ₽)
         </button>
       )}
 
-      {/* Manual Requisites */}
       {result.requisite && !result.payment_url && (
-        <div className="card" style={{ marginBottom: 16, padding: 16 }}>
-          <p className="section-title" style={{ marginBottom: 8 }}>
-            {result.requisite_label || 'Реквизиты для перевода'}
-          </p>
+        <div className="card" style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 8 }}>
+            {result.requisite_label || 'Реквизиты перевода'}
+          </div>
           <div className="copy-field" style={{ margin: 0 }}>
             <code>{result.requisite}</code>
             <button
               className={`copy-btn ${copiedReq ? 'copied' : ''}`}
               onClick={copyRequisite}
             >
-              {copiedReq ? <Check size={15} /> : <Copy size={15} />}
+              {copiedReq ? <Check size={14} /> : <Copy size={14} />}
+              {copiedReq ? '✓' : 'Копия'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Confirm Payment Button */}
       {result.pending_id && (
         <button
           className="btn btn-secondary btn-block"
           onClick={handleMarkPaid}
           disabled={notifying}
-          style={notifying ? { opacity: 0.7 } : {}}
         >
           {notifying ? (
             <>
-              <Loader2 size={18} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
-              Отправка уведомления...
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              Отправка...
             </>
           ) : (
             <>
-              <CheckCircle2 size={18} style={{ color: 'var(--success)' }} />Я оплатил
+              <CheckCircle2 size={16} />Я оплатил
             </>
           )}
         </button>
@@ -260,62 +244,3 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: 800,
-    marginBottom: 20,
-    letterSpacing: '-0.02em',
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  successContainer: {
-    textAlign: 'center' as const,
-    padding: '40px 20px',
-    position: 'relative' as const,
-  },
-  successGlow: {
-    position: 'absolute' as const,
-    top: '15%',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: 220,
-    height: 220,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(16, 185, 129, 0.25), transparent 70%)',
-    filter: 'blur(45px)',
-    pointerEvents: 'none' as const,
-  },
-  successIconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: '50%',
-    background: 'rgba(16, 185, 129, 0.12)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto 20px',
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  successTitle: {
-    fontSize: 22,
-    fontWeight: 800,
-    marginBottom: 10,
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  successText: {
-    color: 'var(--text-secondary)',
-    fontSize: 14,
-    lineHeight: '1.6',
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-};

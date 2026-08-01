@@ -20,7 +20,7 @@ interface FAQPageProps {
 }
 
 interface FAQItem {
-  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  icon: React.ComponentType<{ size?: number }>;
   q: string;
   a: string;
 }
@@ -29,7 +29,7 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     icon: Link,
     q: 'Как подключиться к VPN?',
-    a: 'Откройте раздел «Моя подписка» → скопируйте ссылку-подписку → в приложении VPN-клиента выберите «Import from URL» или отсканируйте QR-код → обновите список серверов → подключайтесь.',
+    a: 'Откройте раздел «Моя подписка» → скопируйте ссылку-подписку → в приложении VPN-клиента выберите «Import from Clipboard» или отсканируйте QR-код → обновите серверы.',
   },
   {
     icon: Smartphone,
@@ -39,32 +39,32 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     icon: Wrench,
     q: 'Ссылка не работает, что делать?',
-    a: 'Попробуйте обновить подписку в приложении (Update subscription). Убедитесь, что время на устройстве выставлено корректно (автоматически). Если не помогает — напишите в поддержку.',
+    a: 'Попробуйте обновить подписку в приложении (Update subscription). Убедитесь, что точное время на устройстве синхронизировано автоматически.',
   },
   {
     icon: Laptop,
     q: 'Можно ли использовать на нескольких устройствах?',
-    a: 'Да, если ваш тариф поддерживает несколько устройств (3, 5 или 7). Одна ссылка-подписка добавляется на все устройства одновременно.',
+    a: 'Да, в зависимости от лимита вашего тарифа (1, 3 или 5 устройств). Достаточно добавить ссылку на каждое устройство.',
   },
   {
     icon: RefreshCw,
     q: 'Как продлить подписку?',
-    a: 'Перейдите в «Тарифы» → выберите нужный срок и количество устройств → оплатите. Подписка продлится автоматически, ваша ссылка не изменится.',
+    a: 'Перейдите в раздел «Тарифы» → выберите тариф → оплатите. Срок автоматически продлится, ссылка не изменится.',
   },
   {
     icon: Gift,
     q: 'Как работает пробный период?',
-    a: 'Пробный доступ выдаётся бесплатно, один раз на аккаунт. Длительность — 2-3 дня. После этого нужно оформить платную подписку.',
+    a: 'Бесплатный тестовый период выдаётся 1 раз на аккаунт. Длительность — 2 дня без привязки банковской карты.',
   },
   {
     icon: Tag,
-    q: 'Как использовать промокод?',
-    a: 'Откройте «Настройки» → введите промокод в соответствующее поле → нажмите «Применить». Скидка применится к следующей покупке.',
+    q: 'Как активировать промокод?',
+    a: 'Откройте «Настройки» → введите промокод в соответствующее поле → нажмите «Применить».',
   },
   {
     icon: Users,
-    q: 'Как работает реферальная программа?',
-    a: 'В разделе «Настройки» скопируйте реферальную ссылку и отправьте другу. Когда он оформит первую подписку — вы получите +5 дней бонусом к вашей подписке.',
+    q: 'Как работает реферальная система?',
+    a: 'Скопируйте реферальную ссылку в настройках и отправьте другу. При его первой оплате вы получите +5 дней в подарок.',
   },
 ];
 
@@ -88,39 +88,41 @@ export function FAQPage({ navigate }: FAQPageProps) {
 
   return (
     <div className="page">
-      <div style={styles.headerRow}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <button
-          className="btn btn-secondary btn-icon"
+          className="noir-icon-btn"
           onClick={() => {
             haptic('light');
             navigate('settings');
           }}
-          style={{ width: 36, height: 36 }}
         >
           <ArrowLeft size={18} />
         </button>
-        <h2 style={{ ...styles.pageTitle, marginBottom: 0 }}>Частые вопросы</h2>
+        <div style={{ fontSize: 18, fontWeight: 850, color: '#ffffff' }}>Вопросы и ответы</div>
       </div>
 
-      {/* Search Input */}
-      <div className="card" style={{ padding: '10px 14px', marginBottom: 16, marginTop: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="card" style={{ padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
         <Search size={18} style={{ color: 'var(--text-muted)' }} />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Поиск по вопросам..."
-          style={styles.searchInput}
+          placeholder="Поиск по базе знаний..."
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            color: '#ffffff',
+            fontSize: 14,
+            fontFamily: 'inherit',
+          }}
         />
       </div>
 
-      {/* Accordion list */}
       {filteredItems.length === 0 ? (
         <div className="empty-state">
           <div className="title">Ничего не найдено</div>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            Попробуйте изменить поисковый запрос
-          </p>
         </div>
       ) : (
         filteredItems.map((item, idx) => {
@@ -136,12 +138,12 @@ export function FAQPage({ navigate }: FAQPageProps) {
                   setOpenIdx(isOpen ? null : idx);
                 }}
               >
-                <span style={styles.questionRow}>
-                  <div style={styles.iconWrapper}>
-                    <IconComp size={16} style={{ color: 'var(--accent-primary)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, paddingRight: 10 }}>
+                  <div className="noir-card-icon-box" style={{ width: 34, height: 34, borderRadius: 10 }}>
+                    <IconComp size={16} />
                   </div>
-                  <span>{item.q}</span>
-                </span>
+                  <span style={{ fontSize: 14, fontWeight: 750, color: '#ffffff' }}>{item.q}</span>
+                </div>
 
                 <ChevronDown
                   size={16}
@@ -169,45 +171,3 @@ export function FAQPage({ navigate }: FAQPageProps) {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: 800,
-    marginBottom: 20,
-    letterSpacing: '-0.02em',
-  },
-  headerRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-    color: 'var(--text-primary)',
-    fontSize: 14,
-    fontFamily: 'inherit',
-  },
-  questionRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-    paddingRight: 10,
-  },
-  iconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    background: 'var(--glass-bg)',
-    border: '1px solid var(--glass-border)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-};

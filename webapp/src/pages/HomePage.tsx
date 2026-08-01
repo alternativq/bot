@@ -9,14 +9,12 @@ import {
   Copy,
   Check,
   Zap,
-  Layers,
-  HelpCircle,
   Settings,
-  Gift,
   AlertTriangle,
-  ChevronRight,
-  Wifi,
+  Search,
   Key,
+  Flame,
+  History,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -56,7 +54,7 @@ export function HomePage({ navigate }: HomePageProps) {
     try {
       await navigator.clipboard.writeText(profile.subscription.sub_link);
       setCopied(true);
-      showToast('Ссылка-подписка скопирована в буфер', 'success');
+      showToast('Ссылка скопирована в буфер', 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       showToast('Не удалось скопировать', 'error');
@@ -66,14 +64,15 @@ export function HomePage({ navigate }: HomePageProps) {
   if (loading) {
     return (
       <div className="page">
-        <div style={{ marginBottom: 24 }}>
-          <div className="skeleton" style={{ width: '55%', height: 32, marginBottom: 10 }} />
-          <div className="skeleton" style={{ width: '35%', height: 16 }} />
+        <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="skeleton" style={{ width: 150, height: 38, borderRadius: 12 }} />
+          <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 12 }} />
         </div>
-        <div className="skeleton" style={{ height: 210, marginBottom: 20, borderRadius: 20 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        <div className="skeleton" style={{ height: 26, marginBottom: 20, borderRadius: 6 }} />
+        <div className="skeleton" style={{ height: 180, marginBottom: 20, borderRadius: 20 }} />
+        <div className="noir-grid">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton" style={{ height: 84, borderRadius: 18 }} />
+            <div key={i} className="skeleton" style={{ height: 170, borderRadius: 20 }} />
           ))}
         </div>
       </div>
@@ -88,71 +87,92 @@ export function HomePage({ navigate }: HomePageProps) {
             <AlertTriangle size={32} />
           </div>
           <div className="title">Ошибка подключения</div>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{error}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{error}</p>
         </div>
       </div>
     );
   }
 
   const sub = profile?.subscription;
-  const firstName = user?.first_name || profile?.username || 'Пользователь';
+  const firstName = user?.first_name || profile?.username || 'USER';
 
   return (
     <div className="page">
-      {/* Top Header */}
-      <div style={styles.header}>
-        <div style={styles.greetingContainer}>
-          <h1 style={styles.greeting}>
-            Привет, <span className="glow-text">{firstName}</span> 👋
-          </h1>
-          <p style={styles.subtitle}>
-            ID: <span style={styles.idBadge}>{profile?.tg_id}</span>
-          </p>
+      {/* Noir Top Header */}
+      <div className="noir-header">
+        <div className="noir-header-left">
+          <div className="noir-logo-box">
+            <ShieldCheck size={26} />
+          </div>
+          <div>
+            <div className="noir-header-title">NOIR VPN</div>
+            <div className="noir-header-sub">ПОЛЬЗОВАТЕЛЬ · {firstName.toUpperCase()}</div>
+          </div>
         </div>
-        <div style={styles.networkBadge}>
-          <Wifi size={14} style={{ color: 'var(--success)' }} />
-          <span>Онлайн</span>
+
+        <button
+          className="noir-icon-btn"
+          onClick={() => {
+            haptic('light');
+            navigate('faq');
+          }}
+        >
+          <Search size={18} />
+        </button>
+      </div>
+
+      {/* Marquee Running Ticker */}
+      <div className="noir-ticker-container">
+        <div className="noir-ticker-track">
+          {[1, 2].map((k) => (
+            <span key={k} className="noir-ticker-item">
+              ✦ ПРЕМИАЛЬНЫЙ VPN + БЕЗЛИМИТНЫЙ ТРАФИК + МГНОВЕННАЯ ВЫДАЧА + 100 GBIT/S СКОРОСТЬ ✦
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* Subscription Hero Card */}
+      {/* Subscription Active Banner */}
       {sub ? (
-        <div className="card card-accent" style={styles.subCard}>
-          <div className="glow-orb" style={{ top: -30, right: -20 }} />
-
-          <div style={styles.subHeader}>
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <div style={styles.subPlan}>{sub.plan_title}</div>
-              <span className={`badge ${sub.active ? 'badge-success' : 'badge-danger'}`}>
-                <span className="pulse-dot" />
-                {sub.active ? 'Активна' : 'Истекла'}
+        <div className="card card-accent" style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 850, color: '#ffffff', marginBottom: 6 }}>
+                {sub.plan_title}
+              </div>
+              <span className="noir-badge">
+                {sub.active ? '● АКТИВНА' : '● ИСТЕКЛА'}
               </span>
             </div>
-            <div style={styles.daysLeft}>
-              <span style={styles.daysNumber}>{sub.days_left}</span>
-              <span style={styles.daysLabel}>дней</span>
+
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 26, fontWeight: 900, color: '#ffffff', lineHeight: 1 }}>
+                {sub.days_left}
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                дней осталось
+              </div>
             </div>
           </div>
 
-          <div style={styles.subInfo}>
-            <div className="info-row">
-              <span className="label">Действует до</span>
-              <span className="value">
-                {new Date(sub.period_end).toLocaleDateString('ru-RU', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                })}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="label">Лимит устройств</span>
-              <span className="value">{sub.limit_ip ? `${sub.limit_ip} уст.` : 'Безлимит'}</span>
-            </div>
+          <div className="info-row">
+            <span className="label">Действует до</span>
+            <span className="value">
+              {new Date(sub.period_end).toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })}
+            </span>
+          </div>
+
+          <div className="info-row">
+            <span className="label">Лимит устройств</span>
+            <span className="value">{sub.limit_ip ? `${sub.limit_ip} шт.` : 'Безлимит'}</span>
           </div>
 
           {sub.sub_link && (
-            <div style={styles.actions}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
               <button
                 className="btn btn-primary btn-sm"
                 style={{ flex: 1 }}
@@ -161,37 +181,31 @@ export function HomePage({ navigate }: HomePageProps) {
                   navigate('subscription');
                 }}
               >
-                <Key size={16} />
+                <Key size={15} />
                 Подключение
               </button>
               <button
-                className="btn btn-secondary btn-sm"
+                className="copy-btn"
                 onClick={copyLink}
-                style={
-                  copied
-                    ? { borderColor: 'rgba(16, 185, 129, 0.3)', color: 'var(--success)' }
-                    : {}
-                }
+                style={copied ? { background: 'var(--success)', color: '#ffffff' } : {}}
               >
-                {copied ? <Check size={16} /> : <Copy size={16} />}
-                {copied ? 'Скопировано' : 'Ссылка'}
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? 'Скопировано' : 'Копировать'}
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div className="card card-accent" style={styles.emptyCard}>
-          <div
-            className="glow-orb"
-            style={{ top: -20, left: '50%', transform: 'translateX(-50%)' }}
-          />
-          <div style={styles.emptyIconWrapper}>
-            <ShieldCheck size={36} style={{ color: 'var(--accent-primary)' }} />
+        <div className="card card-accent" style={{ textAlign: 'center', padding: '24px 16px', marginBottom: 20 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 16, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+            <ShieldCheck size={28} />
           </div>
-          <h3 style={styles.emptyTitle}>Нет активной подписки</h3>
-          <p style={styles.emptyText}>
-            Выберите лучший тариф и мгновенно подключите безопасный VPN
-          </p>
+          <div style={{ fontSize: 17, fontWeight: 850, color: '#ffffff', marginBottom: 4 }}>
+            Нет активной подписки
+          </div>
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            Выберите тариф и получите безопасный VPN за 1 минуту
+          </div>
           <button
             className="btn btn-primary btn-block"
             onClick={() => {
@@ -199,240 +213,126 @@ export function HomePage({ navigate }: HomePageProps) {
               navigate('plans');
             }}
           >
-            <Zap size={18} />
-            Выбрать тариф
+            <Zap size={16} />
+            Выбрать тариф →
           </button>
         </div>
       )}
 
-      {/* Quick Navigation Cards */}
-      <div style={styles.quickActions}>
-        <p className="section-title">Быстрый доступ</p>
-        <div style={styles.actionGrid}>
-          {[
-            { icon: Layers, label: 'Тарифы', page: 'plans' as Page, color: '#9333ea' },
-            { icon: Key, label: 'VPN', page: 'subscription' as Page, color: '#3b82f6' },
-            { icon: HelpCircle, label: 'FAQ', page: 'faq' as Page, color: '#10b981' },
-            { icon: Settings, label: 'Ещё', page: 'settings' as Page, color: '#f59e0b' },
-          ].map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <button
-                key={item.page}
-                className="card card-interactive"
-                style={styles.actionCard}
-                onClick={() => {
-                  haptic('light');
-                  navigate(item.page);
-                }}
-              >
-                <div
-                  style={{
-                    ...styles.actionIconWrapper,
-                    background: `${item.color}15`,
-                    borderColor: `${item.color}30`,
-                  }}
-                >
-                  <IconComponent size={22} style={{ color: item.color }} />
-                </div>
-                <span style={styles.actionLabel}>{item.label}</span>
-              </button>
-            );
-          })}
+      {/* Noir Section Title */}
+      <div className="noir-section-title">К А Т А Л О Г  У С Л У Г</div>
+
+      {/* 2-Column Catalog Cards matching NOIR MARKET layout */}
+      <div className="noir-grid">
+        {/* Card 1: Plans */}
+        <div
+          className="card card-interactive"
+          onClick={() => {
+            haptic('light');
+            navigate('plans');
+          }}
+        >
+          <div className="noir-card-top">
+            <div className="noir-card-icon-box">
+              <Flame size={22} />
+            </div>
+            <span className="noir-badge">ХИТ</span>
+          </div>
+
+          <div className="noir-card-title">Тарифы VPN</div>
+          <div className="noir-card-desc">Все подписки · От 1 месяца</div>
+
+          <div className="noir-card-price-row">
+            <span className="noir-price">от 99 ₽</span>
+          </div>
+
+          <div className="noir-card-footer">
+            <span>⚡ моментальная выдача</span>
+          </div>
+        </div>
+
+        {/* Card 2: My VPN */}
+        <div
+          className="card card-interactive"
+          onClick={() => {
+            haptic('light');
+            navigate('subscription');
+          }}
+        >
+          <div className="noir-card-top">
+            <div className="noir-card-icon-box">
+              <Key size={22} />
+            </div>
+            <span className="noir-badge noir-badge-dark">VPN</span>
+          </div>
+
+          <div className="noir-card-title">Моя подписка</div>
+          <div className="noir-card-desc">Ключ подключения & QR-код</div>
+
+          <div className="noir-card-price-row">
+            <span className="noir-price">Ключи</span>
+          </div>
+
+          <div className="noir-card-footer">
+            <span>📱 iOS / Android / PC</span>
+          </div>
+        </div>
+
+        {/* Card 3: History */}
+        <div
+          className="card card-interactive"
+          onClick={() => {
+            haptic('light');
+            navigate('history');
+          }}
+        >
+          <div className="noir-card-top">
+            <div className="noir-card-icon-box">
+              <History size={22} />
+            </div>
+          </div>
+
+          <div className="noir-card-title">История</div>
+          <div className="noir-card-desc">Ваши покупки и транзакции</div>
+
+          <div className="noir-card-price-row">
+            <span className="noir-price">Отчёты</span>
+          </div>
+
+          <div className="noir-card-footer">
+            <span>📜 квитанции</span>
+          </div>
+        </div>
+
+        {/* Card 4: Settings / Profile */}
+        <div
+          className="card card-interactive"
+          onClick={() => {
+            haptic('light');
+            navigate('settings');
+          }}
+        >
+          <div className="noir-card-top">
+            <div className="noir-card-icon-box">
+              <Settings size={22} />
+            </div>
+            {profile && profile.discount_percent > 0 && (
+              <span className="noir-badge">-{profile.discount_percent}%</span>
+            )}
+          </div>
+
+          <div className="noir-card-title">Настройки</div>
+          <div className="noir-card-desc">Промокоды & Бонусы</div>
+
+          <div className="noir-card-price-row">
+            <span className="noir-price">Профиль</span>
+          </div>
+
+          <div className="noir-card-footer">
+            <span>🎁 рефералы</span>
+          </div>
         </div>
       </div>
-
-      {/* Discount notification badge */}
-      {profile && profile.discount_percent > 0 && (
-        <div className="card" style={styles.discountCard}>
-          <div style={styles.discountIconWrapper}>
-            <Gift size={22} style={{ color: 'var(--success)' }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>
-              Персональная скидка <span className="glow-text">{profile.discount_percent}%</span>
-            </p>
-            <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-              Автоматически применится к вашей следующей покупке
-            </p>
-          </div>
-          <ChevronRight size={18} style={{ color: 'var(--text-muted)' }} />
-        </div>
-      )}
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  greetingContainer: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 800,
-    marginBottom: 4,
-    letterSpacing: '-0.02em',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: 'var(--text-secondary)',
-  },
-  idBadge: {
-    color: 'var(--accent-primary)',
-    fontFamily: 'monospace',
-    fontWeight: 600,
-  },
-  networkBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '4px 10px',
-    borderRadius: 'var(--radius-full)',
-    background: 'rgba(16, 185, 129, 0.1)',
-    border: '1px solid rgba(16, 185, 129, 0.2)',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--success)',
-  },
-  subCard: {
-    marginBottom: 20,
-    position: 'relative' as const,
-  },
-  subHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  subPlan: {
-    fontSize: 20,
-    fontWeight: 800,
-    marginBottom: 6,
-    letterSpacing: '-0.01em',
-  },
-  daysLeft: {
-    textAlign: 'center' as const,
-    background: 'var(--accent-gradient)',
-    borderRadius: '14px',
-    padding: '8px 18px',
-    minWidth: 68,
-    boxShadow: '0 4px 16px var(--accent-glow)',
-  },
-  daysNumber: {
-    display: 'block',
-    fontSize: 24,
-    fontWeight: 800,
-    lineHeight: 1,
-    color: '#ffffff',
-  },
-  daysLabel: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontWeight: 600,
-    textTransform: 'uppercase' as const,
-  },
-  subInfo: {
-    marginBottom: 16,
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  actions: {
-    display: 'flex',
-    gap: 10,
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  emptyCard: {
-    textAlign: 'center' as const,
-    padding: '32px 20px',
-    marginBottom: 20,
-    position: 'relative' as const,
-  },
-  emptyIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: '50%',
-    background: 'var(--accent-soft)',
-    border: '1px solid rgba(147, 51, 234, 0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto 16px',
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  emptyTitle: {
-    fontSize: 19,
-    fontWeight: 800,
-    marginBottom: 6,
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  emptyText: {
-    color: 'var(--text-secondary)',
-    fontSize: 14,
-    marginBottom: 20,
-    lineHeight: '1.5',
-    position: 'relative' as const,
-    zIndex: 2,
-  },
-  quickActions: {
-    marginTop: 4,
-  },
-  actionGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 10,
-  },
-  actionCard: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '16px 8px',
-    border: '1px solid var(--glass-border)',
-    fontFamily: 'inherit',
-  },
-  actionIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    border: '1px solid transparent',
-  },
-  actionLabel: {
-    fontSize: 12,
-    fontWeight: 650,
-    color: 'var(--text-primary)',
-  },
-  discountCard: {
-    marginTop: 16,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '14px 16px',
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-    background: 'rgba(16, 185, 129, 0.04)',
-  },
-  discountIconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    background: 'rgba(16, 185, 129, 0.12)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-};
