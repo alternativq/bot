@@ -51,15 +51,37 @@ export default function App() {
         <div style={stubStyles.card}>
           <h2 style={stubStyles.title}>Технические работы</h2>
           <p style={stubStyles.text}>
-            Данный ресурс недоступен для прямого просмотра.
+            Данный ресурс недоступен для прямого просмотра. Откройте приложение в Telegram.
           </p>
         </div>
       </div>
     );
   }
 
-  // Loading check
-  if (isTelegram === null) return null;
+  // Skeleton loading screen during initial Telegram initData check
+  if (isTelegram === null) {
+    return (
+      <div className="page" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top, 0px))' }}>
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="skeleton" style={{ width: 140, height: 28, marginBottom: 8, borderRadius: 8 }} />
+            <div className="skeleton" style={{ width: 90, height: 16, borderRadius: 6 }} />
+          </div>
+          <div className="skeleton" style={{ width: 70, height: 26, borderRadius: 100 }} />
+        </div>
+
+        <div className="skeleton" style={{ height: 200, marginBottom: 20, borderRadius: 20 }} />
+
+        <div className="skeleton" style={{ width: 120, height: 16, marginBottom: 12, borderRadius: 6 }} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 80, borderRadius: 18 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const renderPage = () => {
     switch (page) {
@@ -102,28 +124,28 @@ const stubStyles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: '#0a0a14',
+    backgroundColor: '#070812',
     padding: 20,
-    fontFamily: "'Inter', -apple-system, sans-serif",
+    fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
   },
   card: {
-    backgroundColor: '#12121e',
+    backgroundColor: 'rgba(18, 20, 38, 0.9)',
     padding: 32,
-    borderRadius: 18,
-    border: '1px solid rgba(255,255,255,0.06)',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    border: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
     textAlign: 'center' as const,
     maxWidth: 400,
   },
   title: {
     fontSize: 18,
     fontWeight: 700,
-    color: '#eaeaff',
+    color: '#f1f5f9',
     marginBottom: 8,
   },
   text: {
     fontSize: 14,
-    color: '#6b6b8d',
+    color: '#8b92b2',
     lineHeight: '1.5',
   },
 };

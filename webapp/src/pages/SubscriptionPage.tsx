@@ -2,27 +2,45 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Page } from '../App';
 import { getSubscription, getSubscriptionQR } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
+import { useToast } from '../context/ToastContext';
 import type { SubscriptionInfo } from '../types';
+import {
+  Key,
+  Copy,
+  Check,
+  QrCode,
+  RefreshCw,
+  Smartphone,
+  HardDrive,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Download,
+} from 'lucide-react';
 
 interface SubscriptionPageProps {
   navigate: (page: Page) => void;
 }
 
+type OSTab = 'ios' | 'android' | 'windows' | 'mac';
+
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 Б';
-  const gb = bytes / (1024 ** 3);
+  const gb = bytes / 1024 ** 3;
   if (gb >= 1) return `${gb.toFixed(2)} ГБ`;
-  const mb = bytes / (1024 ** 2);
+  const mb = bytes / 1024 ** 2;
   return `${mb.toFixed(0)} МБ`;
 }
 
 export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
   const { haptic, showBackButton, hideBackButton } = useTelegram();
+  const { showToast } = useToast();
   const [sub, setSub] = useState<SubscriptionInfo | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [activeOS, setActiveOS] = useState<OSTab>('ios');
 
   useEffect(() => {
     showBackButton(() => navigate('home'));
@@ -48,15 +66,15 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
     try {
       await navigator.clipboard.writeText(sub.sub_link);
       setCopied(true);
-      haptic('medium');
+      showToast('Ссылка-подписка скопирована в буфер', 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* clipboard not available */
+      showToast('Не удалось скопировать', 'error');
     }
-  }, [sub, haptic]);
+  }, [sub, showToast]);
 
   const loadQR = useCallback(async () => {
-    haptic();
+    haptic('light');
     if (qrData) {
       setShowQR(!showQR);
       return;
@@ -65,16 +83,18 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       const data = await getSubscriptionQR();
       setQrData(data.qr_base64);
       setShowQR(true);
+      showToast('QR-код готов к сканированию', 'info');
     } catch {
-      /* error */
+      showToast('Ошибка загрузки QR-кода', 'error');
     }
-  }, [haptic, qrData, showQR]);
+  }, [haptic, qrData, showQR, showToast]);
 
   if (loading) {
     return (
       <div className="page">
-        <div className="skeleton" style={{ height: 32, width: '60%', marginBottom: 24 }} />
-        <div className="skeleton" style={{ height: 280, borderRadius: 18 }} />
+        <div className="skeleton" style={{ height: 32, width: '50%', marginBottom: 20 }} />
+        <div className="skeleton" style={{ height: 260, borderRadius: 20, marginBottom: 16 }} />
+        <div className="skeleton" style={{ height: 120, borderRadius: 18 }} />
       </div>
     );
   }
@@ -83,14 +103,18 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
     return (
       <div className="page">
         <div className="empty-state">
-          <div className="icon">🔑</div>
+          <div className="icon">
+            <Key size={32} />
+          </div>
           <div className="title">Нет подписки</div>
-          <p>У вас пока нет активной VPN-подписки</p>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+            У вас пока нет активной VPN-подписки
+          </p>
           <button
             className="btn btn-primary"
-            style={{ marginTop: 24 }}
+            style={{ marginTop: 20 }}
             onClick={() => {
-              haptic();
+              haptic('medium');
               navigate('plans');
             }}
           >
@@ -101,26 +125,71 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
     );
   }
 
-  // Traffic progress
+  // Traffic progress calculation
   const trafficUsed = sub.traffic ? sub.traffic.upload + sub.traffic.download : 0;
   const trafficTotal = sub.traffic?.total_bytes || 0;
   const trafficPercent = trafficTotal > 0 ? Math.min(100, (trafficUsed / trafficTotal) * 100) : 0;
+
+  const OS_GUIDES: Record<OSTab, { appName: string; appStore: string; steps: string[] }> = {
+    ios: {
+      appName: 'Streisand / Happ / V2Box',
+      appStore: 'App Store',
+      steps: [
+        'Установите Streisand или Happ из App Store',
+        'Скопируйте ссылку-подписку выше',
+        'Откройте приложение → нажмите «+» → «Import from Clipboard»',
+        'Выберите сервер и включите VPN',
+      ],
+    },
+    android: {
+      appName: 'v2rayNG / Hiddify',
+      appStore: 'Google Play',
+      steps: [
+        'Установите v2rayNG из Google Play',
+        'Скопируйте ссылку-подписку',
+        'В v2rayNG откройте меню → «Группы» → добавьте подписку',
+        'Обновите серверы и нажмите кнопку подключения',
+      ],
+    },
+    windows: {
+      appName: 'v2rayN / Hiddify',
+      appStore: 'GitHub / Официальный сайт',
+      steps: [
+        'Скачайте v2rayN или Hiddify для Windows',
+        'Распакуйте и запустите от имени администратора',
+        'Добавьте ссылку подписки через меню «Подписка»',
+        'Обновите список серверов и включите режим системного прокси',
+      ],
+    },
+    mac: {
+      appName: 'FoXray / Hiddify',
+      appStore: 'App Store / GitHub',
+      steps: [
+        'Установите FoXray или Hiddify',
+        'Нажмите «Import from Clipboard» или вставьте вашу ссылку-подписку',
+        'Разрешите добавление конфигурации VPN в macOS',
+        'Выберите оптимальный сервер и подключитесь',
+      ],
+    },
+  };
 
   return (
     <div className="page">
       <h2 style={styles.pageTitle}>Моя подписка</h2>
 
-      {/* Status card */}
+      {/* Main Subscription Card */}
       <div className="card card-accent" style={styles.statusCard}>
-        <div className="glow-orb" style={{ top: -50, right: -30 }} />
+        <div className="glow-orb" style={{ top: -40, right: -20 }} />
 
         <div style={styles.statusHeader}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <div style={styles.planTitle}>{sub.plan_title}</div>
             <span className={`badge ${sub.active ? 'badge-success' : 'badge-danger'}`}>
-              {sub.active ? '● Активна' : sub.disabled ? '● Отключена' : '● Истекла'}
+              <span className="pulse-dot" />
+              {sub.active ? 'Активна' : sub.disabled ? 'Отключена' : 'Истекла'}
             </span>
           </div>
+
           <div style={styles.daysBlock}>
             <span style={styles.daysNum}>{sub.days_left}</span>
             <span style={styles.daysText}>дней</span>
@@ -129,7 +198,9 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
 
         <div style={{ marginTop: 16, position: 'relative' as const, zIndex: 2 }}>
           <div className="info-row">
-            <span className="label">Действует до</span>
+            <span className="label">
+              <Calendar size={15} style={{ color: 'var(--text-muted)' }} /> Действует до
+            </span>
             <span className="value">
               {new Date(sub.period_end).toLocaleDateString('ru-RU', {
                 day: '2-digit',
@@ -138,19 +209,26 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
               })}
             </span>
           </div>
+
           <div className="info-row">
-            <span className="label">Устройства</span>
-            <span className="value">{sub.limit_ip || '∞'}</span>
+            <span className="label">
+              <Smartphone size={15} style={{ color: 'var(--text-muted)' }} /> Устройства
+            </span>
+            <span className="value">{sub.limit_ip ? `${sub.limit_ip} уст.` : 'Безлимит'}</span>
           </div>
+
           {sub.traffic && (
             <>
               <div className="info-row">
-                <span className="label">Трафик</span>
+                <span className="label">
+                  <HardDrive size={15} style={{ color: 'var(--text-muted)' }} /> Трафик
+                </span>
                 <span className="value">
                   {formatBytes(trafficUsed)}
                   {trafficTotal > 0 ? ` / ${formatBytes(trafficTotal)}` : ' · Безлимит'}
                 </span>
               </div>
+
               {trafficTotal > 0 && (
                 <div style={styles.progressContainer}>
                   <div style={styles.progressTrack}>
@@ -158,9 +236,10 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
                       style={{
                         ...styles.progressBar,
                         width: `${trafficPercent}%`,
-                        background: trafficPercent > 80
-                          ? 'linear-gradient(90deg, var(--warning), var(--danger))'
-                          : 'var(--gradient-accent)',
+                        background:
+                          trafficPercent > 85
+                            ? 'linear-gradient(90deg, var(--warning), var(--danger))'
+                            : 'var(--accent-gradient)',
                       }}
                     />
                   </div>
@@ -171,7 +250,7 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
         </div>
       </div>
 
-      {/* Subscription link */}
+      {/* Subscription Link & QR Code */}
       {sub.sub_link && (
         <div style={{ marginTop: 16 }}>
           <p className="section-title">Ссылка-подписка</p>
@@ -182,22 +261,26 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
                 className={`copy-btn ${copied ? 'copied' : ''}`}
                 onClick={copyLink}
               >
-                {copied ? '✓' : '📋'}
+                {copied ? <Check size={15} /> : <Copy size={15} />}
               </button>
             </div>
 
             <div style={styles.linkActions}>
-              <button className="btn btn-secondary btn-sm" onClick={loadQR}>
-                {showQR ? '🔼 Скрыть' : '📱 QR-код'}
+              <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={loadQR}>
+                <QrCode size={15} />
+                {showQR ? 'Скрыть QR' : 'QR-код'}
+                {showQR ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
               <button
                 className="btn btn-primary btn-sm"
+                style={{ flex: 1 }}
                 onClick={() => {
-                  haptic();
+                  haptic('medium');
                   navigate('plans');
                 }}
               >
-                🔄 Продлить
+                <RefreshCw size={15} />
+                Продлить
               </button>
             </div>
 
@@ -206,46 +289,54 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
                 <div style={styles.qrFrame}>
                   <img
                     src={`data:image/png;base64,${qrData}`}
-                    alt="QR"
+                    alt="QR Code"
                     style={styles.qrImage}
                   />
                 </div>
-                <p style={styles.qrHint}>Отсканируйте в VPN-клиенте</p>
+                <p style={styles.qrHint}>Отсканируйте в вашем VPN-клиенте</p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Connection guide */}
-      <div style={{ marginTop: 16 }}>
-        <p className="section-title">Как подключиться</p>
-        <div className="card" style={{ padding: 0 }}>
-          {[
-            {
-              num: '1',
-              title: 'Установите приложение',
-              desc: 'Android → v2rayNG · iOS → Streisand / Happ\nWindows → v2rayN · macOS → FoXray',
-            },
-            {
-              num: '2',
-              title: 'Добавьте подписку',
-              desc: '«Import from URL» или отсканируйте QR-код',
-            },
-            {
-              num: '3',
-              title: 'Подключайтесь',
-              desc: 'Обновите серверы и нажмите «Connect»',
-            },
-          ].map((step, idx) => (
-            <div key={idx} style={{ ...styles.step, borderBottom: idx < 2 ? '1px solid var(--divider)' : 'none' }}>
-              <span style={styles.stepNum}>{step.num}</span>
-              <div style={{ flex: 1 }}>
-                <div style={styles.stepTitle}>{step.title}</div>
-                <div style={styles.stepDesc}>{step.desc}</div>
-              </div>
-            </div>
+      {/* Connection Guide Tabs */}
+      <div style={{ marginTop: 20 }}>
+        <p className="section-title">Инструкция по настройке</p>
+
+        <div className="tabs" style={{ marginBottom: 12 }}>
+          {(['ios', 'android', 'windows', 'mac'] as OSTab[]).map((os) => (
+            <button
+              key={os}
+              className={`tab ${activeOS === os ? 'active' : ''}`}
+              onClick={() => {
+                haptic('light');
+                setActiveOS(os);
+              }}
+            >
+              {os.toUpperCase()}
+            </button>
           ))}
+        </div>
+
+        <div className="card" style={{ padding: 16 }}>
+          <div style={styles.osHeader}>
+            <Download size={18} style={{ color: 'var(--accent-primary)' }} />
+            <span style={{ fontWeight: 700, fontSize: 14 }}>
+              Рекомендуемое ПО: {OS_GUIDES[activeOS].appName}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+            {OS_GUIDES[activeOS].steps.map((stepText, idx) => (
+              <div key={idx} style={styles.guideStepRow}>
+                <div style={styles.stepNumCircle}>{idx + 1}</div>
+                <div style={{ flex: 1, fontSize: 13, lineHeight: '1.5', color: 'var(--text-primary)' }}>
+                  {stepText}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -261,7 +352,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   statusCard: {
     position: 'relative' as const,
-    overflow: 'hidden',
   },
   statusHeader: {
     display: 'flex',
@@ -269,66 +359,68 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'flex-start',
   },
   planTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 800,
-    marginBottom: 10,
+    marginBottom: 8,
     letterSpacing: '-0.01em',
   },
   daysBlock: {
     textAlign: 'center' as const,
-    background: 'var(--gradient-accent)',
+    background: 'var(--accent-gradient)',
     borderRadius: 14,
-    padding: '12px 22px',
-    boxShadow: '0 4px 24px rgba(124, 108, 240, 0.35)',
+    padding: '10px 20px',
+    boxShadow: '0 4px 20px var(--accent-glow)',
     position: 'relative' as const,
     zIndex: 2,
   },
   daysNum: {
     display: 'block',
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: 800,
     lineHeight: 1,
-    color: '#fff',
+    color: '#ffffff',
   },
   daysText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: 500,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontWeight: 600,
+    textTransform: 'uppercase' as const,
   },
   progressContainer: {
-    marginTop: 8,
+    marginTop: 10,
   },
   progressTrack: {
-    height: 4,
-    borderRadius: 4,
+    height: 5,
+    borderRadius: 6,
     background: 'rgba(255, 255, 255, 0.06)',
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    borderRadius: 4,
-    transition: 'width 0.5s ease',
-    boxShadow: '0 0 8px rgba(124, 108, 240, 0.3)',
+    borderRadius: 6,
+    transition: 'width 0.4s ease',
   },
   linkActions: {
     display: 'flex',
-    gap: 8,
-    marginTop: 14,
+    gap: 10,
+    marginTop: 12,
   },
   qrContainer: {
-    marginTop: 20,
+    marginTop: 16,
     textAlign: 'center' as const,
+    paddingTop: 16,
+    borderTop: '1px solid var(--glass-border)',
   },
   qrFrame: {
     display: 'inline-block',
     padding: 12,
     background: '#ffffff',
     borderRadius: 16,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.3), 0 0 40px rgba(124, 108, 240, 0.08)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
   },
   qrImage: {
-    width: 180,
-    height: 180,
+    width: 170,
+    height: 170,
     display: 'block',
   },
   qrHint: {
@@ -336,35 +428,30 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     marginTop: 10,
   },
-  step: {
+  osHeader: {
     display: 'flex',
-    gap: 14,
-    padding: '16px 20px',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 10,
+    borderBottom: '1px solid var(--glass-border)',
   },
-  stepNum: {
-    width: 30,
-    height: 30,
+  guideStepRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  stepNumCircle: {
+    width: 24,
+    height: 24,
     borderRadius: '50%',
-    background: 'var(--gradient-accent)',
-    color: '#fff',
+    background: 'var(--accent-soft)',
+    color: 'var(--accent-primary)',
+    fontSize: 12,
+    fontWeight: 700,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 14,
-    fontWeight: 700,
     flexShrink: 0,
-    boxShadow: '0 2px 8px rgba(124, 108, 240, 0.25)',
-  },
-  stepTitle: {
-    fontWeight: 700,
-    fontSize: 15,
-    marginBottom: 3,
-  },
-  stepDesc: {
-    fontSize: 13,
-    color: 'var(--text-secondary)',
-    lineHeight: '1.5',
-    whiteSpace: 'pre-line' as const,
+    border: '1px solid rgba(147, 51, 234, 0.3)',
   },
 };

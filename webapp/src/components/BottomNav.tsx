@@ -1,24 +1,36 @@
 import type { Page } from '../App';
+import { Home, Layers, ShieldCheck, History, Settings } from 'lucide-react';
+import { useTelegram } from '../hooks/useTelegram';
 
 interface BottomNavProps {
   current: Page;
   navigate: (page: Page) => void;
 }
 
-const tabs: Array<{ id: Page; label: string; icon: string }> = [
-  { id: 'home', label: 'Главная', icon: '🏠' },
-  { id: 'plans', label: 'Тарифы', icon: '📋' },
-  { id: 'subscription', label: 'VPN', icon: '🔑' },
-  { id: 'history', label: 'История', icon: '📜' },
-  { id: 'settings', label: 'Ещё', icon: '⚙️' },
+interface NavTab {
+  id: Page;
+  label: string;
+  Icon: React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
+}
+
+const tabs: NavTab[] = [
+  { id: 'home', label: 'Главная', Icon: Home },
+  { id: 'plans', label: 'Тарифы', Icon: Layers },
+  { id: 'subscription', label: 'VPN', Icon: ShieldCheck },
+  { id: 'history', label: 'История', Icon: History },
+  { id: 'settings', label: 'Ещё', Icon: Settings },
 ];
 
 export function BottomNav({ current, navigate }: BottomNavProps) {
+  const { haptic } = useTelegram();
+
   return (
     <nav style={styles.nav}>
       <div style={styles.navInner}>
         {tabs.map((tab) => {
           const isActive = current === tab.id;
+          const { Icon } = tab;
+
           return (
             <button
               key={tab.id}
@@ -26,16 +38,28 @@ export function BottomNav({ current, navigate }: BottomNavProps) {
                 ...styles.tab,
                 ...(isActive ? styles.tabActive : {}),
               }}
-              onClick={() => navigate(tab.id)}
+              onClick={() => {
+                if (!isActive) {
+                  haptic('light');
+                  navigate(tab.id);
+                }
+              }}
             >
-              <span
+              <div
                 style={{
-                  ...styles.icon,
-                  ...(isActive ? styles.iconActive : {}),
+                  ...styles.iconContainer,
+                  ...(isActive ? styles.iconContainerActive : {}),
                 }}
               >
-                {tab.icon}
-              </span>
+                <Icon
+                  size={20}
+                  style={{
+                    color: isActive ? '#a78bfa' : 'var(--text-secondary)',
+                    transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  }}
+                />
+              </div>
+
               <span
                 style={{
                   ...styles.label,
@@ -44,6 +68,7 @@ export function BottomNav({ current, navigate }: BottomNavProps) {
               >
                 {tab.label}
               </span>
+
               {isActive && <span style={styles.activeIndicator} />}
             </button>
           );
@@ -61,17 +86,17 @@ const styles: Record<string, React.CSSProperties> = {
     right: 0,
     zIndex: 100,
     paddingBottom: 'var(--safe-bottom)',
-    background: 'rgba(8, 8, 16, 0.75)',
+    background: 'rgba(8, 9, 18, 0.85)',
     backdropFilter: 'blur(24px) saturate(180%)',
     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
   },
   navInner: {
     display: 'flex',
     justifyContent: 'space-around',
     alignItems: 'center',
     height: 'var(--nav-height)',
-    maxWidth: 480,
+    maxWidth: 'var(--max-width)',
     margin: '0 auto',
     padding: '0 8px',
   },
@@ -81,35 +106,41 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '3px',
-    padding: '8px 0',
+    gap: '4px',
+    padding: '6px 0',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
-    transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
     position: 'relative' as const,
+    transition: 'transform 0.15s ease',
   },
-  tabActive: {},
-  icon: {
-    fontSize: '20px',
-    lineHeight: 1,
-    transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  tabActive: {
+    transform: 'translateY(-1px)',
   },
-  iconActive: {
-    transform: 'scale(1.15)',
-    filter: 'drop-shadow(0 0 6px rgba(124, 108, 240, 0.4))',
+  iconContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 26,
+    borderRadius: 12,
+    transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  },
+  iconContainerActive: {
+    background: 'rgba(124, 58, 237, 0.15)',
+    filter: 'drop-shadow(0 0 8px rgba(167, 139, 250, 0.4))',
   },
   label: {
-    fontSize: '10px',
+    fontSize: '11px',
     fontWeight: 500,
     color: 'var(--text-secondary)',
     fontFamily: 'inherit',
-    transition: 'color 0.2s ease',
-    letterSpacing: '0.02em',
+    transition: 'all 0.2s ease',
+    letterSpacing: '0.01em',
   },
   labelActive: {
-    color: '#a78bfa',
+    color: '#f1f5f9',
     fontWeight: 700,
   },
   activeIndicator: {
@@ -117,10 +148,11 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     left: '50%',
     transform: 'translateX(-50%)',
-    width: 20,
-    height: 2,
-    borderRadius: 2,
-    background: 'linear-gradient(90deg, #7c6cf0, #c084fc)',
-    boxShadow: '0 0 8px rgba(124, 108, 240, 0.5)',
+    width: 24,
+    height: 3,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
+    background: 'linear-gradient(90deg, #7c3aed, #c084fc)',
+    boxShadow: '0 2px 10px rgba(167, 139, 250, 0.6)',
   },
 };
