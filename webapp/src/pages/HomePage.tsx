@@ -3,6 +3,7 @@ import type { Page } from '../App';
 import { authenticate, getMe, setAuthToken, getAuthToken } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
+import logoImg from '../assets/logo.jpg';
 import type { UserProfile } from '../types';
 import {
   ShieldCheck,
@@ -102,7 +103,7 @@ export function HomePage({ navigate }: HomePageProps) {
       <div className="noir-header">
         <div className="noir-header-left">
           <div className="noir-logo-box">
-            <img src="/logo.jpg" alt="VeiloraVPN" style={{ width: '100%', height: '100%', borderRadius: 14, objectFit: 'cover' }} />
+            <img src={logoImg} alt="VeiloraVPN" style={{ width: '100%', height: '100%', borderRadius: 14, objectFit: 'cover' }} />
           </div>
           <div>
             <div className="noir-header-title">VEILORA VPN</div>
