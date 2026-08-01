@@ -38,7 +38,10 @@ async def cmd_start(message: Message, command: CommandObject | None = None) -> N
     if command and command.args:
         ref_code = command.args.strip()
         if ref_code:
-            await apply_code(message.from_user.id, ref_code)
+            try:
+                await apply_code(message.from_user.id, ref_code)
+            except Exception:
+                log.exception("Ошибка при применении реферального кода")
 
     await message.answer(
         texts.WELCOME,

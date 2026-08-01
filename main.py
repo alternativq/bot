@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger(__name__)
 
 
-async def run_sub_server(bot: Bot) -> None:
+async def start_sub_server(bot: Bot) -> web.AppRunner:
     app = create_app()
     app["bot"] = bot  # доступ к bot из API endpoints
     runner = web.AppRunner(app)
@@ -32,7 +32,7 @@ async def run_sub_server(bot: Bot) -> None:
         "HTTP-сервер (API + подписки) слушает http://%s:%s",
         settings.SUB_SERVER_HOST, settings.SUB_SERVER_PORT,
     )
-    await asyncio.Event().wait()  # держим сервер живым вечно
+    return runner
 
 
 async def main() -> None:
@@ -62,13 +62,13 @@ async def main() -> None:
     from sub_server import set_bot_instance
     set_bot_instance(bot)
 
-    # HTTP-сервер запускается всегда: через него работает Mini App API,
-    # а также вебхуки оплаты и (если настроен) сервер единой подписки
-    tasks = [dp.start_polling(bot), run_sub_server(bot)]
+    runner = await start_sub_server(bot)
 
     try:
-        await asyncio.gather(*tasks)
+        await dp.start_polling(bot)
     finally:
+        log.info("Завершение работы бота и веб-сервера...")
+        await runner.cleanup()
         scheduler.shutdown(wait=False)
         await bot.session.close()
 

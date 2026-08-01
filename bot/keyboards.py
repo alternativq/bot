@@ -10,19 +10,29 @@ from aiogram.types import (
 
 from config import settings
 from panel.xui_client import InboundInfo
-from payment_methods import PaymentMethod
-from plans import PLANS, TRIAL_PLAN
 
 BTN_OPEN_APP = "🚀 Открыть VeiloraVPN App"
 
 
+def _is_valid_webapp_url(url: str) -> bool:
+    if not url or not url.startswith("https://"):
+        return False
+    # t.me domains cannot be used as WebAppInfo target URLs
+    if "t.me/" in url.lower():
+        return False
+    return True
+
+
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Постоянная кнопка внизу экрана для быстрой помощи и открытия Mini App."""
+    """Постоянная кнопка внизу экрана для открытия Mini App."""
     url = settings.webapp_url
+    if _is_valid_webapp_url(url):
+        btn = KeyboardButton(text=BTN_OPEN_APP, web_app=WebAppInfo(url=url))
+    else:
+        btn = KeyboardButton(text=BTN_OPEN_APP)
+
     return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=BTN_OPEN_APP, web_app=WebAppInfo(url=url))],
-        ],
+        keyboard=[[btn]],
         resize_keyboard=True,
     )
 
@@ -30,11 +40,12 @@ def main_menu_keyboard() -> ReplyKeyboardMarkup:
 def open_app_keyboard() -> InlineKeyboardMarkup:
     """Инлайн-кнопка для моментального перехода в Telegram Mini App."""
     url = settings.webapp_url
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="⚡ Открыть VeiloraVPN App", web_app=WebAppInfo(url=url))],
-        ]
-    )
+    if _is_valid_webapp_url(url):
+        btn = InlineKeyboardButton(text="⚡ Открыть VeiloraVPN App", web_app=WebAppInfo(url=url))
+    else:
+        btn = InlineKeyboardButton(text="⚡ Открыть VeiloraVPN App", url=url if url.startswith("http") else "https://t.me")
+
+    return InlineKeyboardMarkup(inline_keyboard=[[btn]])
 
 
 def admin_inbound_keyboard(tg_id: int, inbounds: list[InboundInfo]) -> InlineKeyboardMarkup:
