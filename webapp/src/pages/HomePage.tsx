@@ -141,7 +141,15 @@ export function HomePage({ navigate }: HomePageProps) {
               <div style={{ fontSize: 18, fontWeight: 850, color: '#ffffff', marginBottom: 6 }}>
                 {sub.plan_title}
               </div>
-              <span className="noir-badge">
+              <span
+                className="noir-badge"
+                style={{
+                  background: sub.active ? 'var(--success)' : 'rgba(239, 68, 68, 0.2)',
+                  color: '#ffffff',
+                  border: sub.active ? 'none' : '1px solid var(--danger)',
+                  boxShadow: sub.active ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none',
+                }}
+              >
                 {sub.active ? '● АКТИВНА' : '● ИСТЕКЛА'}
               </span>
             </div>

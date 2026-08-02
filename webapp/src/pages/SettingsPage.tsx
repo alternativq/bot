@@ -201,15 +201,15 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
         {[
           ...(profile?.is_admin
             ? [
-                {
-                  icon: ShieldAlert,
-                  label: 'Админ-панель 3X-UI',
-                  action: () => {
-                    haptic('medium');
-                    navigate('admin');
-                  },
+              {
+                icon: ShieldAlert,
+                label: 'Админ-панель',
+                action: () => {
+                  haptic('medium');
+                  navigate('admin');
                 },
-              ]
+              },
+            ]
             : []),
           {
             icon: HelpCircle,

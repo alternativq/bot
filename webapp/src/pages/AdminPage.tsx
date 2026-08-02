@@ -56,6 +56,8 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
   // Modal / Inputs state
   const [showInboundModal, setShowInboundModal] = useState(false);
   const [selectedInboundId, setSelectedInboundId] = useState<number | null>(null);
+  const [customInboundInput, setCustomInboundInput] = useState('');
+  const [assigningInbound, setAssigningInbound] = useState(false);
 
   useEffect(() => {
     showBackButton(() => {
@@ -146,15 +148,29 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
 
   // Assign 3x-ui inbound
   const handleAssignInbound = async () => {
-    if (!selectedUser || !selectedInboundId) return;
+    if (!selectedUser) return;
+    const targetInboundId = customInboundInput.trim()
+      ? parseInt(customInboundInput.trim(), 10)
+      : selectedInboundId;
+
+    if (!targetInboundId || isNaN(targetInboundId)) {
+      showToast('Выберите инбаунд или введите его ID', 'error');
+      return;
+    }
+
     haptic('medium');
+    setAssigningInbound(true);
     try {
-      await adminAddInbound(selectedUser.user.tg_id, selectedInboundId);
-      showToast(`Инбаунд #${selectedInboundId} привязан`, 'success');
+      await adminAddInbound(selectedUser.user.tg_id, targetInboundId);
+      showToast(`Инбаунд #${targetInboundId} успешно привязан!`, 'success');
       setShowInboundModal(false);
+      setSelectedInboundId(null);
+      setCustomInboundInput('');
       handleSelectUser(selectedUser.user.tg_id);
     } catch (err: any) {
       showToast(err.message || 'Ошибка привязки инбаунда', 'error');
+    } finally {
+      setAssigningInbound(false);
     }
   };
 
@@ -329,28 +345,79 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
             )}
           </div>
 
-          {/* Modal for selecting inbound */}
+          {/* Modal for selecting or typing inbound */}
           {showInboundModal && (
             <div className="card card-accent" style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', marginBottom: 10 }}>Привязать новый инбаунд</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                {selectedUser.inbounds.map((ib) => (
-                  <button
-                    key={ib.id}
-                    className={`btn btn-secondary btn-block ${selectedInboundId === ib.id ? 'btn-primary' : ''}`}
-                    style={{ justifyContent: 'space-between' }}
-                    onClick={() => setSelectedInboundId(ib.id)}
-                  >
-                    <span>#{ib.id} {ib.remark} ({ib.protocol})</span>
-                    <Zap size={14} />
-                  </button>
-                ))}
+              <div style={{ fontSize: 14, fontWeight: 850, color: '#ffffff', marginBottom: 12 }}>Привязать новый инбаунд (3X-UI)</div>
+
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                Выберите из списка панели или введите ID вручную:
               </div>
+
+              {selectedUser.inbounds && selectedUser.inbounds.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                  {selectedUser.inbounds.map((ib) => {
+                    const isSelected = selectedInboundId === ib.id && !customInboundInput;
+                    return (
+                      <button
+                        key={ib.id}
+                        type="button"
+                        className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'} btn-block`}
+                        style={{ justifyContent: 'space-between', padding: '10px 14px' }}
+                        onClick={() => {
+                          setSelectedInboundId(ib.id);
+                          setCustomInboundInput('');
+                        }}
+                      >
+                        <span>#{ib.id} {ib.remark} ({ib.protocol})</span>
+                        <Zap size={14} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div style={{ marginBottom: 14 }}>
+                <input
+                  type="number"
+                  placeholder="Или введите ID инбаунда (напр. 1, 2)..."
+                  value={customInboundInput}
+                  onChange={(e) => {
+                    setCustomInboundInput(e.target.value);
+                    setSelectedInboundId(null);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: '#ffffff',
+                    fontSize: 13,
+                    outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary btn-block" onClick={handleAssignInbound} disabled={!selectedInboundId}>
-                  Привязать
+                <button
+                  type="button"
+                  className="btn btn-primary btn-block"
+                  onClick={handleAssignInbound}
+                  disabled={assigningInbound || (!selectedInboundId && !customInboundInput.trim())}
+                >
+                  {assigningInbound ? 'Привязка...' : 'Привязать'}
                 </button>
-                <button className="btn btn-secondary btn-block" onClick={() => setShowInboundModal(false)}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-block"
+                  onClick={() => {
+                    setShowInboundModal(false);
+                    setSelectedInboundId(null);
+                    setCustomInboundInput('');
+                  }}
+                >
                   Отмена
                 </button>
               </div>
