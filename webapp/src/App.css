@@ -219,6 +219,108 @@ body {
 }
 
 /* ══════════════════════════════════════════
+   Pulse Ring Interactive Connection Widget
+   ══════════════════════════════════════════ */
+.pulse-ring-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s var(--ease-out);
+}
+
+.pulse-ring-wrapper:active {
+  transform: scale(0.98);
+}
+
+.pulse-ring-outer {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.pulse-ring-active {
+  box-shadow: 0 0 35px rgba(16, 185, 129, 0.35);
+  border: 2px solid var(--success);
+}
+
+.pulse-ring-inactive {
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
+  border: 2px solid var(--danger);
+}
+
+.pulse-ring-wave {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--success);
+  opacity: 0.6;
+  animation: pulseWave 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes pulseWave {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+.pulse-ring-inner {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(7, 7, 9, 0.9) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  z-index: 2;
+}
+
+.pulse-ring-text-main {
+  font-size: 16px;
+  font-weight: 850;
+  color: #ffffff;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.pulse-ring-text-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ══════════════════════════════════════════
    Frosted Category Filter Pill Bar
    ══════════════════════════════════════════ */
 .noir-pills-scroll {

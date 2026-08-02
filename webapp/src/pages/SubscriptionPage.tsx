@@ -11,13 +11,12 @@ import {
   QrCode,
   RefreshCw,
   ArrowLeft,
+  Zap,
 } from 'lucide-react';
 
 interface SubscriptionPageProps {
   navigate: (page: Page) => void;
 }
-
-type OSTab = 'ios' | 'android' | 'windows' | 'mac';
 
 export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
   const { haptic, showBackButton, hideBackButton } = useTelegram();
@@ -27,7 +26,6 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [activeOS, setActiveOS] = useState<OSTab>('ios');
 
   useEffect(() => {
     showBackButton(() => navigate('home'));
@@ -110,45 +108,6 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       </div>
     );
   }
-
-  const OS_GUIDES: Record<OSTab, { appName: string; steps: string[] }> = {
-    ios: {
-      appName: 'Streisand / Happ / V2Box',
-      steps: [
-        'Установите Streisand или Happ из App Store',
-        'Скопируйте ссылку-подписку выше',
-        'В приложении нажмите «+» → «Import from Clipboard»',
-        'Подключайтесь к выбранному серверу',
-      ],
-    },
-    android: {
-      appName: 'v2rayNG / Hiddify',
-      steps: [
-        'Установите v2rayNG из Google Play',
-        'Скопируйте ссылку-подписку',
-        'В v2rayNG откройте меню → «Группы» → добавьте подписку',
-        'Обновите серверы и нажмите кнопку подключения',
-      ],
-    },
-    windows: {
-      appName: 'v2rayN / Hiddify',
-      steps: [
-        'Скачайте v2rayN или Hiddify для Windows',
-        'Распакуйте и запустите от имени администратора',
-        'Добавьте ссылку подписки через меню «Подписка»',
-        'Включите режим системного прокси',
-      ],
-    },
-    mac: {
-      appName: 'FoXray / Hiddify',
-      steps: [
-        'Установите FoXray или Hiddify для macOS',
-        'Нажмите «Import from Clipboard»',
-        'Разрешите добавление VPN конфигурации',
-        'Подключитесь к серверу',
-      ],
-    },
-  };
 
   return (
     <div className="page">
@@ -264,40 +223,75 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
         </div>
       )}
 
-      {/* OS Setup Guide */}
-      <div className="noir-section-title">И Н С Т Р У К Ц И Я  П О  Н А С Т Р О Й К Е</div>
-
-      <div className="noir-pills-scroll">
-        {(['ios', 'android', 'windows', 'mac'] as OSTab[]).map((os) => (
-          <button
-            key={os}
-            className={`noir-pill ${activeOS === os ? 'active' : ''}`}
-            onClick={() => {
-              haptic('light');
-              setActiveOS(os);
-            }}
-          >
-            {os.toUpperCase()}
-          </button>
-        ))}
+      {/* 2 Recommended Apps: Happ & v2raytun */}
+      <div className="noir-section-title">П Р И Л О Ж Е Н И Я  Д Л Я  П О Д К Л Ю Ч Е Н И Я</div>
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}>
+        Универсальные приложения для iOS, Android и Windows:
       </div>
 
-      <div className="card">
-        <div style={{ fontSize: 14, fontWeight: 800, color: '#ffffff', marginBottom: 12 }}>
-          Рекомендуемое ПО: {OS_GUIDES[activeOS].appName}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {OS_GUIDES[activeOS].steps.map((step, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#ffffff', color: '#000000', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {idx + 1}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+        {/* App 1: Happ */}
+        <div className="card card-accent" style={{ padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--success)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Zap size={20} />
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.45 }}>
-                {step}
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 850, color: '#ffffff' }}>Happ</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>iOS · Android · Windows</div>
               </div>
             </div>
-          ))}
+            <span className="noir-badge">РЕКОМЕНДУЕМ</span>
+          </div>
+
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.45 }}>
+            1. Установите <strong>Happ</strong> из маркета приложений.<br />
+            2. Скопируйте ссылку-подписку выше.<br />
+            3. В приложении нажмите <strong>«+» → Импорт подписки</strong>.
+          </div>
+
+          <button
+            className="btn btn-primary btn-block btn-sm"
+            onClick={() => {
+              haptic('medium');
+              copyLink();
+            }}
+          >
+            <Copy size={14} /> Скопировать ключ для Happ
+          </button>
+        </div>
+
+        {/* App 2: v2raytun */}
+        <div className="card" style={{ padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Key size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 850, color: '#ffffff' }}>v2raytun</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>iOS · Android · Windows</div>
+              </div>
+            </div>
+            <span className="noir-badge noir-badge-dark">ОТЛИЧНЫЙ ВЫБОР</span>
+          </div>
+
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.45 }}>
+            1. Установите <strong>v2raytun</strong>.<br />
+            2. Скопируйте ссылку-подписку выше.<br />
+            3. Откройте v2raytun и нажмите <strong>«Вставить подписку»</strong>.
+          </div>
+
+          <button
+            className="btn btn-secondary btn-block btn-sm"
+            onClick={() => {
+              haptic('medium');
+              copyLink();
+            }}
+          >
+            <Copy size={14} /> Скопировать ключ для v2raytun
+          </button>
         </div>
       </div>
     </div>

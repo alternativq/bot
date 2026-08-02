@@ -133,6 +133,34 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </div>
 
+      {/* Interactive Pulse Ring Connection Widget */}
+      <div
+        className="pulse-ring-wrapper"
+        onClick={() => {
+          haptic('heavy');
+          if (sub?.sub_link) {
+            copyLink();
+          } else {
+            navigate('plans');
+          }
+        }}
+      >
+        <div className={`pulse-ring-outer ${sub?.active ? 'pulse-ring-active' : 'pulse-ring-inactive'}`}>
+          {sub?.active && <div className="pulse-ring-wave" />}
+          <div className="pulse-ring-inner">
+            <ShieldCheck size={42} style={{ color: sub?.active ? 'var(--success)' : 'var(--danger)' }} />
+          </div>
+        </div>
+
+        <div className="pulse-ring-text-main">
+          {sub?.active ? 'Защита VeiloraVPN Активна' : 'Подключение Отключено'}
+        </div>
+        <div className="pulse-ring-text-sub">
+          <Zap size={13} style={{ color: sub?.active ? 'var(--success)' : 'var(--text-muted)' }} />
+          <span>{sub?.active ? 'Скорость до 1000 МБ/с · Нажмите скопировать ключ' : 'Нажмите для выбора тарифа'}</span>
+        </div>
+      </div>
+
       {/* Subscription Active Banner */}
       {sub ? (
         <div className="card card-accent" style={{ marginBottom: 20 }}>

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Loader2,
   ShieldAlert,
+  Share2,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -62,6 +63,18 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
       showToast('Не удалось скопировать', 'error');
     }
   }, [referral, showToast]);
+
+  const shareToTelegram = useCallback(() => {
+    if (!referral?.referral_link) return;
+    haptic('medium');
+    const text = 'Быстрый и надежный VPN 🚀 1000 МБ/с без ограничений!';
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referral.referral_link)}&text=${encodeURIComponent(text)}`;
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, '_blank');
+    }
+  }, [referral, haptic]);
 
   const handleApplyPromo = useCallback(async () => {
     if (!promoInput.trim()) return;
@@ -138,7 +151,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
               Пригласите друга! При его первой покупке вы получите <strong style={{ color: '#ffffff' }}>+5 дней</strong> бонусом.
             </div>
 
-            <div className="copy-field" style={{ margin: 0 }}>
+            <div className="copy-field" style={{ marginBottom: 12 }}>
               <code>{referral.referral_link}</code>
               <button
                 className={`copy-btn ${copiedRef ? 'copied' : ''}`}
@@ -148,6 +161,13 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
                 {copiedRef ? '✓' : 'Копия'}
               </button>
             </div>
+
+            <button
+              className="btn btn-primary btn-block btn-sm"
+              onClick={shareToTelegram}
+            >
+              <Share2 size={15} /> Поделиться в Telegram
+            </button>
           </div>
         </div>
       )}
