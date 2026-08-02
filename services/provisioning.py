@@ -194,25 +194,34 @@ async def assign_inbound_to_subscription(tg_id: int, inbound_id: int) -> Subscri
 
 async def admin_extend_subscription(tg_id: int, days: int) -> Subscription | None:
     """
-    Продлевает подписку пользователя вручную (админ-панель), в обход
-    оплаты. При days=0 просто пересинхронизирует состояние в панели
-    (например, чтобы сразу подхватить новый инбаунд, не дожидаясь
-    следующего продления). Возвращает обновлённую подписку или None,
-    если у пользователя её нет вообще.
+    Продлевает подписку пользователя на N дней (или создаёт новую, если подписки нет).
+    Отсчёт продления всегда идёт от актуальной даты (или от текущего момента, если подписка истекла).
     """
+    from plans import PLANS, get_plan
     async with get_session() as session:
         sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id))
-        if sub is None:
-            return None
-        plan = get_plan(sub.plan_id)
-        if plan is None:
-            return None
+        
+        base_time = max(sub.period_end, utcnow()) if (sub and sub.period_end) else utcnow()
+        new_period_end = base_time + dt.timedelta(days=days)
 
-        new_period_end = sub.period_end + dt.timedelta(days=days)
+        plan_id = sub.plan_id if sub else "m1"
+        plan = get_plan(plan_id) or next(iter(PLANS.values()))
+
+        if sub is None:
+            sub = Subscription(
+                user_tg_id=tg_id,
+                plan_id=plan.id,
+                period_end=new_period_end,
+                public_token=uuid.uuid4().hex,
+            )
+            session.add(sub)
+        else:
+            sub.period_end = new_period_end
+
         existing_sub_id = next(iter((sub.xui_sub_ids or {}).values()), None)
         inbound_id, sub_id = await xui_client.renew_client(
             tg_id=tg_id,
-            client_uuid=sub.xui_uuid,
+            client_uuid=sub.xui_uuid or f"tg{tg_id}",
             existing_sub_id=existing_sub_id,
             new_period_end=new_period_end,
             total_gb=plan.total_gb,
