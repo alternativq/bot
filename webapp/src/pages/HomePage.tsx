@@ -152,7 +152,7 @@ export function HomePage({ navigate }: HomePageProps) {
         <div className={`pulse-ring-outer ${sub?.active ? 'pulse-ring-active' : 'pulse-ring-inactive'}`}>
           {sub?.active && <div className="pulse-ring-wave" />}
           <div className="pulse-ring-inner">
-            <ShieldCheck size={46} style={{ color: sub?.active ? '#10b981' : '#ef4444' }} />
+            <ShieldCheck size={46} style={{ color: sub?.active ? '#ffffff' : '#ef4444' }} />
           </div>
         </div>
 
@@ -160,7 +160,7 @@ export function HomePage({ navigate }: HomePageProps) {
           {sub?.active ? 'VeiloraVPN Подключение' : 'Нажмите для подписки'}
         </div>
         <div className="pulse-ring-text-sub">
-          <Zap size={13} style={{ color: sub?.active ? '#10b981' : 'var(--text-muted)' }} />
+          <Zap size={13} style={{ color: sub?.active ? '#60a5fa' : 'var(--text-muted)' }} />
           <span>{sub?.active ? 'Нажмите, чтобы скопировать ключ в 1 клик' : 'Перейти в каталог тарифов →'}</span>
         </div>
       </div>
