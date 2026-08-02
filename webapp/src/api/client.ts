@@ -173,3 +173,7 @@ export async function adminResolvePayment(pendingId: number, action: 'confirm' |
 export async function adminDeleteSubscription(targetTgId: number): Promise<{ status: string }> {
   return request(`/admin/user/${targetTgId}/delete-sub`, { method: 'POST' });
 }
+
+export async function adminGrantTrial(targetTgId: number): Promise<{ status: string; period_end: string }> {
+  return request(`/admin/user/${targetTgId}/grant-trial`, { method: 'POST' });
+}

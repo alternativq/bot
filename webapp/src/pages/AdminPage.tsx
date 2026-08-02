@@ -6,6 +6,7 @@ import {
   adminExtendUser,
   adminGetPendingPayments,
   adminGetUser,
+  adminGrantTrial,
   adminResolvePayment,
   adminSearchUsers,
   adminToggleUser,
@@ -31,6 +32,7 @@ import {
   Plus,
   Zap,
   Trash2,
+  Gift,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -132,6 +134,19 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
       handleSelectUser(selectedUser.user.tg_id);
     } catch (err: any) {
       showToast(err.message || 'Ошибка продления', 'error');
+    }
+  };
+
+  // Grant trial to user
+  const handleGrantTrial = async () => {
+    if (!selectedUser) return;
+    haptic('medium');
+    try {
+      const res = await adminGrantTrial(selectedUser.user.tg_id);
+      showToast(`Пробный период успешно выдан! До: ${new Date(res.period_end).toLocaleDateString()}`, 'success');
+      handleSelectUser(selectedUser.user.tg_id);
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка выдачи теста', 'error');
     }
   };
 
@@ -319,11 +334,14 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
           {/* Quick Actions */}
           <div className="noir-section-title">УПРАВЛЕНИЕ ПОДПИСКОЙ</div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 16 }}>
-            <button className="btn btn-secondary btn-block" onClick={() => handleExtend(7)}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+            <button className="btn btn-secondary btn-block" style={{ padding: '10px 6px', fontSize: 12 }} onClick={handleGrantTrial}>
+              <Gift size={14} /> Тест
+            </button>
+            <button className="btn btn-secondary btn-block" style={{ padding: '10px 6px', fontSize: 12 }} onClick={() => handleExtend(7)}>
               <Plus size={14} /> +7 Дней
             </button>
-            <button className="btn btn-secondary btn-block" onClick={() => handleExtend(30)}>
+            <button className="btn btn-secondary btn-block" style={{ padding: '10px 6px', fontSize: 12 }} onClick={() => handleExtend(30)}>
               <Plus size={14} /> +30 Дней
             </button>
           </div>

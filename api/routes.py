@@ -834,3 +834,19 @@ async def admin_delete_user_sub(request: web.Request) -> web.Response:
     except Exception as e:
         log.exception("Admin delete subscription failed")
         return _error(str(e), 500)
+
+
+@api_routes.post("/api/v1/admin/user/{target_tg_id}/grant-trial")
+async def admin_grant_user_trial(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    from services.provisioning import admin_grant_trial
+    try:
+        bot = request.app.get("bot")
+        sub = await admin_grant_trial(target_tg_id, bot=bot)
+        return _json({"status": "granted", "period_end": sub.period_end.isoformat()})
+    except Exception as e:
+        log.exception("Admin grant trial failed")
+        return _error(str(e), 500)

@@ -247,17 +247,40 @@ async def admin_toggle_subscription(tg_id: int) -> bool | None:
 
 
 async def admin_delete_subscription(tg_id: int) -> bool:
-    """Удаляет подписку пользователя из базы данных и отключает клиента в 3X-UI."""
+    """Удаляет подписку пользователя из базы данных и полностью удаляет клиента из 3X-UI панели."""
     async with get_session() as session:
         sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id))
         if sub is None:
             return False
+        client_uuid = sub.xui_uuid
+        sub_ids = sub.xui_sub_ids or {}
         await session.delete(sub)
         await session.commit()
 
     try:
-        await xui_client.set_client_enabled(tg_id, enabled=False)
+        await xui_client.delete_client(tg_id, client_uuid=client_uuid, sub_ids=sub_ids)
     except Exception:
-        log.exception("Failed to disable 3x-ui client for deleted sub %s", tg_id)
+        log.exception("Failed to delete 3x-ui client for deleted sub %s", tg_id)
 
     return True
+
+
+async def admin_grant_trial(tg_id: int, bot: Bot | None = None) -> Subscription:
+    """Принудительно активирует/выдаёт пробный период пользователю администратором."""
+    from plans import TRIAL_PLAN
+    async with get_session() as session:
+        user = await session.get(User, tg_id)
+        if user is None:
+            user = User(tg_id=tg_id)
+            session.add(user)
+        user.trial_used = True
+        await session.commit()
+
+    return await _finalize_purchase(
+        tg_id=tg_id,
+        plan=TRIAL_PLAN,
+        external_id=f"admin_trial:{tg_id}",
+        provider="admin_trial",
+        amount_rub=0,
+        bot=bot,
+    )

@@ -426,3 +426,42 @@ async def build_unified_subscription_content(sub_ids: dict[int, str]) -> tuple[s
     content = base64.b64encode("\n".join(all_lines).encode("utf-8")).decode("ascii")
     userinfo = SubUserInfo(upload=total_upload, download=total_download, total=max_total, expire=max_expire)
     return content, userinfo
+
+
+async def delete_client(
+    tg_id: int,
+    client_uuid: str | None = None,
+    sub_ids: dict[str, str] | None = None,
+) -> None:
+    """Полностью удаляет клиента из всех инбаундов 3X-UI панели."""
+    email = client_email(tg_id)
+    existing = await _get_client_by_email(email)
+
+    target_uuid = client_uuid or (getattr(existing, "id", None) if existing else None)
+    if not target_uuid:
+        return
+
+    inbound_ids: list[int] = []
+    if sub_ids:
+        for k in sub_ids.keys():
+            try:
+                inbound_ids.append(int(k))
+            except ValueError:
+                pass
+
+    if not inbound_ids:
+        try:
+            inbounds = await get_all_inbounds()
+            inbound_ids = [ib.id for ib in inbounds]
+        except Exception:
+            inbound_ids = []
+
+    for ib_id in inbound_ids:
+        try:
+            async def _delete(api: AsyncApi, ib_id=ib_id, target_uuid=target_uuid):
+                await api.client.delete(ib_id, target_uuid)
+
+            await _with_relogin(_delete)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("Failed to delete client %s from inbound %s: %s", tg_id, ib_id, exc)
