@@ -34,7 +34,7 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     icon: Smartphone,
     q: 'Какое приложение установить?',
-    a: 'Android → v2rayNG или Hiddify\niOS → Streisand, Happ или V2Box\nWindows → v2rayN или Hiddify\nmacOS → FoXray или Hiddify',
+    a: 'Android → Happ или v2raytun\niOS → Happ или v2raytun\nWindows → Happ или v2raytun',
   },
   {
     icon: Wrench,
