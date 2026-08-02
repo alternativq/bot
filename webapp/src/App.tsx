@@ -9,7 +9,7 @@ import { PlansPage } from './pages/PlansPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 import { AdminPage } from './pages/AdminPage';
-import { getMe } from './api/client';
+import { authenticate, getAuthToken, setAuthToken, getMe } from './api/client';
 import type { UserProfile } from './types';
 
 export type Page =
@@ -34,13 +34,25 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp;
-    if (tg && tg.initData && tg.initData.length > 0) {
-      setIsTelegram(true);
-      getMe().then(setProfile).catch(() => {});
-    } else {
-      setIsTelegram(false);
+    async function initAuth() {
+      const tg = window.Telegram?.WebApp;
+      if (tg && tg.initData && tg.initData.length > 0) {
+        setIsTelegram(true);
+        try {
+          if (!getAuthToken()) {
+            const { token } = await authenticate(tg.initData);
+            setAuthToken(token);
+          }
+          const userProfile = await getMe();
+          setProfile(userProfile);
+        } catch (err) {
+          console.error('Auth initialization error:', err);
+        }
+      } else {
+        setIsTelegram(false);
+      }
     }
+    initAuth();
   }, []);
 
   const navigate = (p: Page) => setPage(p);

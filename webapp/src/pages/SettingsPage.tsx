@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -198,6 +199,18 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {[
+          ...(profile?.is_admin
+            ? [
+                {
+                  icon: ShieldAlert,
+                  label: 'Админ-панель 3X-UI',
+                  action: () => {
+                    haptic('medium');
+                    navigate('admin');
+                  },
+                },
+              ]
+            : []),
           {
             icon: HelpCircle,
             label: 'Часто задаваемые вопросы (FAQ)',
