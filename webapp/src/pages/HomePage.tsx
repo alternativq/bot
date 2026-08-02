@@ -16,6 +16,9 @@ import {
   Key,
   Flame,
   History,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -29,6 +32,7 @@ export function HomePage({ navigate }: HomePageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -165,6 +169,54 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </div>
 
+      {/* 30-Second Quick Onboarding Banner */}
+      <div
+        className="card card-interactive"
+        style={{ marginBottom: 18, background: 'radial-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(13, 13, 16, 0.95) 100%)', border: '1px solid rgba(255, 255, 255, 0.15)' }}
+        onClick={() => {
+          haptic('light');
+          setShowGuide(!showGuide);
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <HelpCircle size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 850, color: '#ffffff' }}>👋 Настройка за 30 секунд</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Пошаговый визуальный гайд по подключению</div>
+            </div>
+          </div>
+          {showGuide ? <ChevronUp size={18} style={{ color: 'var(--text-secondary)' }} /> : <ChevronDown size={18} style={{ color: 'var(--text-secondary)' }} />}
+        </div>
+
+        {showGuide && (
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span className="noir-badge" style={{ background: '#ffffff', color: '#000000', fontWeight: 900 }}>1</span>
+              <div style={{ fontSize: 12.5, color: '#ffffff', lineHeight: 1.4 }}>
+                Установите <strong>Happ</strong> или <strong>v2raytun</strong> из маркета приложений.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span className="noir-badge" style={{ background: '#ffffff', color: '#000000', fontWeight: 900 }}>2</span>
+              <div style={{ fontSize: 12.5, color: '#ffffff', lineHeight: 1.4 }}>
+                Скопируйте ваш секретный ключ подписки нажатием на <strong>«Копировать»</strong> ниже.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span className="noir-badge" style={{ background: '#ffffff', color: '#000000', fontWeight: 900 }}>3</span>
+              <div style={{ fontSize: 12.5, color: '#ffffff', lineHeight: 1.4 }}>
+                Откройте приложение, нажмите <strong>«+» → Вставить из буфера</strong> и включите VPN!
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Subscription Active Banner */}
       {sub ? (
         <div className="card card-accent" style={{ marginBottom: 20 }}>
@@ -211,6 +263,39 @@ export function HomePage({ navigate }: HomePageProps) {
             <span className="label">Лимит устройств</span>
             <span className="value">{sub.limit_ip ? `${sub.limit_ip} шт.` : 'Безлимит'}</span>
           </div>
+
+          {/* Visual Subscription Progress Bar */}
+          {(() => {
+            const totalDays = sub.days_left > 30 ? 90 : 30;
+            const percent = Math.min(100, Math.max(0, Math.round((sub.days_left / totalDays) * 100)));
+            const progressColor = sub.days_left <= 3 ? '#ef4444' : sub.days_left <= 7 ? '#f59e0b' : '#10b981';
+            return (
+              <div style={{ marginTop: 14, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, fontWeight: 750, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  <span>Прогресс подписки</span>
+                  <span style={{ color: progressColor, fontWeight: 850 }}>
+                    {sub.days_left} дн. ({percent}%)
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: 8, borderRadius: 999, background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${percent}%`,
+                      borderRadius: 999,
+                      background: sub.days_left <= 3
+                        ? 'linear-gradient(90deg, #ef4444, #f87171)'
+                        : sub.days_left <= 7
+                        ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
+                        : 'linear-gradient(90deg, #10b981, #34d399)',
+                      boxShadow: `0 0 10px ${progressColor}`,
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })()}
 
           {sub.sub_link && (
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>

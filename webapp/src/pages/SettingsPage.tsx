@@ -18,6 +18,7 @@ import {
   Loader2,
   ShieldAlert,
   Share2,
+  Wrench,
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -93,6 +94,27 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
       setPromoLoading(false);
     }
   }, [promoInput, showToast]);
+
+  const handleReportProblem = useCallback(async () => {
+    haptic('heavy');
+    const userStr = profile?.username ? `@${profile.username}` : `ID: ${profile?.tg_id || user?.id || 'гость'}`;
+    const sub = profile?.subscription;
+    const subStr = sub ? (sub.active ? `Активна (${sub.days_left} дн., ${sub.plan_title})` : 'Истекла') : 'Нет подписки';
+    const osInfo = navigator.userAgent.includes('iPhone') ? 'iOS' : navigator.userAgent.includes('Android') ? 'Android' : 'Desktop/Windows';
+
+    const diagText = `🆘 ОБРАЩЕНИЕ В ПОДДЕРЖКУ VEILORAVPN\n• Пользователь: ${userStr}\n• TG ID: ${profile?.tg_id || user?.id}\n• Подписка: ${subStr}\n• Устройство: ${osInfo}\n\nОпишите вашу проблему:`;
+
+    try {
+      await navigator.clipboard.writeText(diagText);
+      showToast('Диагностика скопирована! Переходим в поддержку...', 'info');
+    } catch {
+      showToast('Переходим в поддержку...', 'info');
+    }
+
+    setTimeout(() => {
+      tg?.openTelegramLink('https://t.me/unluckyqs');
+    }, 450);
+  }, [profile, user, tg, haptic, showToast]);
 
   return (
     <div className="page">
@@ -231,6 +253,11 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
               },
             ]
             : []),
+          {
+            icon: Wrench,
+            label: '🛠️ Сообщить о проблеме (Авто-диагностика)',
+            action: handleReportProblem,
+          },
           {
             icon: HelpCircle,
             label: 'Часто задаваемые вопросы (FAQ)',
