@@ -70,6 +70,111 @@ async def serve_unified_subscription(request: web.Request) -> web.Response:
     return web.Response(text=content, content_type="text/plain", headers=headers)
 
 
+@routes.get("/sub/launch")
+async def launch_redirect(request: web.Request) -> web.Response:
+    """Безопасный HTTPS-перенаправитель для открытия протоколов happ:// и v2raytun:// из Telegram Mini App."""
+    app_type = request.query.get("app", "happ").lower()
+    raw_url = request.query.get("url", "").strip()
+
+    if not raw_url:
+        return web.Response(status=400, text="missing url parameter")
+
+    if app_type == "happ":
+        scheme = f"happ://{raw_url}"
+        app_name = "Happ App"
+    elif app_type == "v2raytun":
+        scheme = f"v2raytun://{raw_url}"
+        app_name = "v2raytun"
+    else:
+        scheme = raw_url
+        app_name = "VPN Client"
+
+    html = f"""<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Запуск {app_name} · VeiloraVPN</title>
+    <style>
+        body {{
+            background-color: #070709;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }}
+        .card {{
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 32px 24px;
+            max-width: 360px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+        }}
+        .icon-box {{
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 30px;
+        }}
+        h2 {{
+            font-size: 19px;
+            font-weight: 850;
+            margin: 0 0 8px;
+        }}
+        p {{
+            font-size: 13px;
+            color: #90909c;
+            line-height: 1.5;
+            margin: 0 0 20px;
+        }}
+        .btn {{
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            background: #ffffff;
+            color: #000000;
+            font-size: 15px;
+            font-weight: 800;
+            border-radius: 14px;
+            text-decoration: none;
+            box-sizing: border-box;
+            box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+        }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon-box">🚀</div>
+        <h2>Переход в {app_name}</h2>
+        <p>Запускаем приложение и передаём подписку VeiloraVPN...</p>
+        <a id="launchBtn" href="{scheme}" class="btn">Открыть {app_name}</a>
+    </div>
+
+    <script>
+        const scheme = "{scheme}";
+        window.location.href = scheme;
+    </script>
+</body>
+</html>"""
+    return web.Response(text=html, content_type="text/html", headers={"Cache-Control": "no-cache"})
+
+
 def set_bot_instance(bot: Bot) -> None:
     global _bot_instance
     _bot_instance = bot
