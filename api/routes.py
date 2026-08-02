@@ -850,3 +850,125 @@ async def admin_grant_user_trial(request: web.Request) -> web.Response:
     except Exception as e:
         log.exception("Admin grant trial failed")
         return _error(str(e), 500)
+
+
+@api_routes.post("/api/v1/admin/user/{target_tg_id}/delete-user")
+async def admin_delete_user(request: web.Request) -> web.Response:
+    """Полное удаление пользователя из БД и панели 3x-ui."""
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    from services.provisioning import admin_delete_user_completely
+    try:
+        await admin_delete_user_completely(target_tg_id)
+        return _json({"status": "deleted"})
+    except Exception as e:
+        log.exception("Admin delete user completely failed")
+        return _error(str(e), 500)
+
+
+@api_routes.get("/api/v1/admin/promos")
+async def admin_get_promos(request: web.Request) -> web.Response:
+    """Получение списка всех промокодов администратора."""
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    from db.models import PromoCode, PromoUsage
+    async with get_session() as session:
+        promos = (await session.scalars(select(PromoCode).order_by(PromoCode.created_at.desc()))).all()
+        usages = (await session.scalars(select(PromoUsage))).all()
+
+        usage_counts: dict[str, int] = {}
+        for u in usages:
+            code_norm = u.code.lower()
+            usage_counts[code_norm] = usage_counts.get(code_norm, 0) + 1
+
+        res = []
+        for p in promos:
+            code_norm = p.code.lower()
+            res.append({
+                "id": p.id,
+                "code": p.code,
+                "discount_percent": p.discount_percent,
+                "bonus_days": getattr(p, "bonus_days", 0) or 0,
+                "uses_left": p.uses_left,
+                "is_active": p.is_active,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+                "uses_count": usage_counts.get(code_norm, 0),
+            })
+
+    return _json({"promos": res})
+
+
+@api_routes.post("/api/v1/admin/promos")
+async def admin_create_promo(request: web.Request) -> web.Response:
+    """Создание нового промокода."""
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    from db.models import PromoCode
+    from services.promo_system import normalize_code
+
+    try:
+        body = await request.json()
+    except Exception:
+        return _error("Invalid JSON")
+
+    raw_code = str(body.get("code", "")).strip()
+    discount_percent = int(body.get("discount_percent", 0))
+    bonus_days = int(body.get("bonus_days", 0))
+    uses_left_val = body.get("uses_left")
+    uses_left = int(uses_left_val) if uses_left_val is not None and str(uses_left_val).isdigit() else None
+
+    norm = normalize_code(raw_code)
+    if not norm:
+        return _error("Введите код промокода")
+
+    async with get_session() as session:
+        existing = await session.scalar(select(PromoCode).where(PromoCode.code == norm))
+        if existing is not None:
+            return _error("Промокод с таким названием уже существует")
+
+        new_promo = PromoCode(
+            code=norm,
+            discount_percent=discount_percent,
+            bonus_days=bonus_days,
+            uses_left=uses_left,
+            is_active=True,
+            created_by_tg_id=request["user"]["tg_id"],
+        )
+        session.add(new_promo)
+        await session.commit()
+
+        return _json({
+            "status": "created",
+            "promo": {
+                "id": new_promo.id,
+                "code": new_promo.code,
+                "discount_percent": new_promo.discount_percent,
+                "bonus_days": new_promo.bonus_days,
+                "uses_left": new_promo.uses_left,
+                "is_active": new_promo.is_active,
+                "uses_count": 0,
+            }
+        })
+
+
+@api_routes.delete("/api/v1/admin/promos/{promo_id}")
+async def admin_delete_promo(request: web.Request) -> web.Response:
+    """Удаление промокода."""
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    from db.models import PromoCode
+    promo_id = int(request.match_info["promo_id"])
+
+    async with get_session() as session:
+        promo = await session.get(PromoCode, promo_id)
+        if promo is None:
+            return _error("Promo code not found", 404)
+        await session.delete(promo)
+        await session.commit()
+
+    return _json({"status": "deleted"})

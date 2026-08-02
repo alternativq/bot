@@ -157,7 +157,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
 
         <div className="pulse-ring-text-main">
-          {sub?.active ? 'VeiloraVPN Подключение' : 'Нажмите для подписки'}
+          {sub?.active ? 'VeiloraVPN' : 'Нажмите для подписки'}
         </div>
         <div className="pulse-ring-text-sub">
           <Zap size={13} style={{ color: sub?.active ? '#ffffff' : 'var(--text-muted)' }} />

@@ -71,8 +71,6 @@ async def apply_code(tg_id: int, code: str) -> Tuple[bool, str]:
             inviter_tg_id = None
             if normalized.startswith("ref") and normalized[3:].isdigit():
                 inviter_tg_id = int(normalized[3:])
-            elif normalized.isdigit():
-                inviter_tg_id = int(normalized)
 
             if inviter_tg_id is not None:
                 if inviter_tg_id == tg_id:
@@ -80,8 +78,7 @@ async def apply_code(tg_id: int, code: str) -> Tuple[bool, str]:
 
                 owner = await session.get(User, inviter_tg_id)
                 if owner is None:
-                    session.add(User(tg_id=inviter_tg_id, username=None))
-                    await session.commit()
+                    return False, "Такого промокода не существует."
 
                 ref_record = await session.scalar(
                     select(Referral).where(
@@ -97,7 +94,7 @@ async def apply_code(tg_id: int, code: str) -> Tuple[bool, str]:
                 await session.commit()
                 return True, "Реферальный код применён. При покупке подписки ваш пригласивший получит +5 дней бонусом."
 
-            return False, "Такого промокода нет или он недоступен."
+            return False, "Такого промокода не существует."
 
         if not promo.is_active:
             return False, "Промокод больше недоступен."
@@ -127,9 +124,23 @@ async def apply_code(tg_id: int, code: str) -> Tuple[bool, str]:
         if promo.uses_left is not None:
             promo.uses_left -= 1
 
+        b_days = getattr(promo, "bonus_days", 0) or 0
+        if b_days > 0:
+            import datetime as dt
+            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id))
+            now = dt.datetime.now(dt.timezone.utc)
+            if sub is not None:
+                base = max(sub.period_end, now)
+                sub.period_end = base + dt.timedelta(days=b_days)
+            msg = f"Промокод применён! Вам добавлено +{b_days} дн. к подписке."
+            if promo.discount_percent > 0:
+                msg += f" И скидка {promo.discount_percent}% на следующую покупку."
+        else:
+            msg = f"Промокод применён. Скидка {promo.discount_percent}%."
+
         session.add(PromoUsage(user_tg_id=tg_id, code=normalized, discount_percent=promo.discount_percent, source="promo"))
         await session.commit()
-        return True, f"Промокод применён. Скидка {promo.discount_percent}%."
+        return True, msg
 
 
 async def get_active_discount_for_user(tg_id: int) -> Tuple[str | None, int]:

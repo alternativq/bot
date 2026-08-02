@@ -3,6 +3,7 @@ import type { Page } from '../App';
 import {
   adminAddInbound,
   adminDeleteSubscription,
+  adminDeleteUserCompletely,
   adminExtendUser,
   adminGetPendingPayments,
   adminGetUser,
@@ -10,7 +11,11 @@ import {
   adminResolvePayment,
   adminSearchUsers,
   adminToggleUser,
+  adminGetPromos,
+  adminCreatePromo,
+  adminDeletePromo,
 } from '../api/client';
+import type { AdminPromoCode } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import type {
@@ -33,6 +38,9 @@ import {
   Zap,
   Trash2,
   Gift,
+  Ticket,
+  Percent,
+  Loader2,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -44,7 +52,7 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
   const { haptic, showBackButton, hideBackButton } = useTelegram();
   const { showToast } = useToast();
 
-  const [tab, setTab] = useState<'users' | 'payments'>('users');
+  const [tab, setTab] = useState<'users' | 'payments' | 'promos'>('users');
 
   // Users tab state
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,6 +64,15 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
   const [pendings, setPendings] = useState<PendingPaymentAdmin[]>([]);
   const [loadingPendings, setLoadingPendings] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // Promos tab state
+  const [promos, setPromos] = useState<AdminPromoCode[]>([]);
+  const [loadingPromos, setLoadingPromos] = useState(false);
+  const [newPromoCode, setNewPromoCode] = useState('');
+  const [newPromoType, setNewPromoType] = useState<'days' | 'percent'>('days');
+  const [newPromoVal, setNewPromoVal] = useState(2);
+  const [newPromoLimit, setNewPromoLimit] = useState('');
+  const [creatingPromo, setCreatingPromo] = useState(false);
 
   // Modal / Inputs state
   const [showInboundModal, setShowInboundModal] = useState(false);
@@ -177,6 +194,79 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
     }
   };
 
+  // Delete user completely
+  const handleDeleteUserCompletely = async () => {
+    if (!selectedUser) return;
+    if (!window.confirm(`Вы уверены, что хотите ПОЛНОСТЬЮ удалить клиента ID ${selectedUser.user.tg_id} и ВСЕ его подписки/данные?`)) return;
+    haptic('heavy');
+    try {
+      await adminDeleteUserCompletely(selectedUser.user.tg_id);
+      showToast('Пользователь полностью удален из БД и 3x-ui', 'success');
+      setSelectedUser(null);
+      handleSearch(searchQuery);
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка удаления пользователя', 'error');
+    }
+  };
+
+  // Load promos
+  const loadPromos = useCallback(async () => {
+    setLoadingPromos(true);
+    try {
+      const data = await adminGetPromos();
+      setPromos(data.promos);
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка загрузки промокодов', 'error');
+    } finally {
+      setLoadingPromos(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    if (tab === 'promos') {
+      loadPromos();
+    }
+  }, [tab, loadPromos]);
+
+  // Create promo
+  const handleCreatePromo = async () => {
+    if (!newPromoCode.trim()) {
+      showToast('Введите название промокода', 'error');
+      return;
+    }
+    haptic('medium');
+    setCreatingPromo(true);
+    try {
+      await adminCreatePromo({
+        code: newPromoCode.trim(),
+        discount_percent: newPromoType === 'percent' ? newPromoVal : 0,
+        bonus_days: newPromoType === 'days' ? newPromoVal : 0,
+        uses_left: newPromoLimit.trim() ? parseInt(newPromoLimit.trim(), 10) : null,
+      });
+      showToast('Промокод успешно создан!', 'success');
+      setNewPromoCode('');
+      setNewPromoLimit('');
+      loadPromos();
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка создания промокода', 'error');
+    } finally {
+      setCreatingPromo(false);
+    }
+  };
+
+  // Delete promo
+  const handleDeletePromo = async (promoId: number, code: string) => {
+    if (!window.confirm(`Удалить промокод ${code}?`)) return;
+    haptic('heavy');
+    try {
+      await adminDeletePromo(promoId);
+      showToast(`Промокод ${code} удален`, 'success');
+      loadPromos();
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка удаления промокода', 'error');
+    }
+  };
+
   // Assign 3x-ui inbound
   const handleAssignInbound = async () => {
     if (!selectedUser) return;
@@ -282,6 +372,18 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
             <span>Заявки на оплату</span>
             {pendings.length > 0 && <span className="noir-pill-badge" style={{ background: 'var(--danger)', color: '#ffffff' }}>{pendings.length}</span>}
           </button>
+
+          <button
+            className={`noir-pill ${tab === 'promos' ? 'active' : ''}`}
+            onClick={() => {
+              haptic('light');
+              setTab('promos');
+            }}
+          >
+            <Ticket size={14} />
+            <span>Промокоды</span>
+            <span className="noir-pill-badge">{promos.length}</span>
+          </button>
         </div>
       )}
 
@@ -358,14 +460,23 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
 
             <button
               className="btn btn-block"
-              style={{ background: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)', border: '1px solid var(--danger)' }}
+              style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: '1px solid var(--danger)' }}
               onClick={handleDeleteSub}
               disabled={!selectedUser.subscription}
             >
               <Trash2 size={16} />
-              <span>Удалить</span>
+              <span>Подписку</span>
             </button>
           </div>
+
+          <button
+            className="btn btn-block"
+            style={{ background: 'rgba(239, 68, 68, 0.25)', color: '#ff4d4d', border: '1px solid #ff4d4d', marginBottom: 16 }}
+            onClick={handleDeleteUserCompletely}
+          >
+            <Trash2 size={16} />
+            <span>🗑 Удалить пользователя полностью из БД</span>
+          </button>
 
           {/* Inbounds list */}
           <div className="card" style={{ marginBottom: 16 }}>
@@ -522,7 +633,7 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
             ))
           )}
         </div>
-      ) : (
+      ) : tab === 'payments' ? (
         /* Pending Payments List */
         <div>
           <div className="noir-section-title">ОЖИДАЮЩИЕ ОПЛАТЫ</div>
@@ -580,6 +691,153 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
                 </div>
               </div>
             ))
+          )}
+        </div>
+      ) : (
+        /* Promos Management List & Form */
+        <div>
+          <div className="noir-section-title">СОЗДАТЬ ПРОМОКОД</div>
+
+          <div className="card card-accent" style={{ marginBottom: 18 }}>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 11, fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                НАЗВАНИЕ ПРОМОКОДА (НАПР. WELCOME)
+              </label>
+              <input
+                type="text"
+                placeholder="Введите код (напр. WELCOME)..."
+                value={newPromoCode}
+                onChange={(e) => setNewPromoCode(e.target.value.toUpperCase())}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: '#000000',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#ffffff',
+                  fontSize: 14,
+                  fontWeight: 800,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+              <button
+                type="button"
+                className={`btn ${newPromoType === 'days' ? 'btn-primary' : 'btn-secondary'} btn-block`}
+                style={{ flex: 1, padding: '8px 10px', fontSize: 12 }}
+                onClick={() => setNewPromoType('days')}
+              >
+                <Gift size={14} /> + Дни к подписке
+              </button>
+
+              <button
+                type="button"
+                className={`btn ${newPromoType === 'percent' ? 'btn-primary' : 'btn-secondary'} btn-block`}
+                style={{ flex: 1, padding: '8px 10px', fontSize: 12 }}
+                onClick={() => setNewPromoType('percent')}
+              >
+                <Percent size={14} /> % Скидка
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                  {newPromoType === 'days' ? 'КОЛ-ВО ДНЕЙ (НАПР. 2)' : 'СКИДКА В % (НАПР. 15)'}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newPromoVal}
+                  onChange={(e) => setNewPromoVal(parseInt(e.target.value, 10) || 0)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: '#000000',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: '#ffffff',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 750, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                  ЛИМИТ АКТИВАЦИЙ (ПУСТО = ♾️)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Безлимит"
+                  value={newPromoLimit}
+                  onChange={(e) => setNewPromoLimit(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: '#000000',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: '#ffffff',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              className="btn btn-primary btn-block"
+              disabled={creatingPromo || !newPromoCode.trim()}
+              onClick={handleCreatePromo}
+            >
+              {creatingPromo ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Plus size={16} />}
+              <span>Создать промокод</span>
+            </button>
+          </div>
+
+          <div className="noir-section-title">СПИСОК ПРОМОКОДОВ ({promos.length})</div>
+
+          {loadingPromos ? (
+            <div className="skeleton" style={{ height: 100, marginBottom: 10 }} />
+          ) : promos.length === 0 ? (
+            <div className="empty-state">
+              <div className="title">Промокоды не созданы</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {promos.map((p) => (
+                <div key={p.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 14 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <code style={{ fontSize: 16, fontWeight: 900, color: '#ffffff', letterSpacing: '0.04em' }}>{p.code}</code>
+                      <span className="noir-badge" style={{ background: p.bonus_days > 0 ? 'var(--success)' : 'var(--accent-purple)', color: '#ffffff' }}>
+                        {p.bonus_days > 0 ? `+${p.bonus_days} ДНЕЙ` : `-${p.discount_percent}%`}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                      Использовано: <strong style={{ color: '#ffffff' }}>{p.uses_count} раз</strong> · Лимит: {p.uses_left !== null ? `${p.uses_left} шт.` : '♾️'}
+                    </div>
+                  </div>
+
+                  <button
+                    className="noir-icon-btn"
+                    style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    onClick={() => handleDeletePromo(p.id, p.code)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

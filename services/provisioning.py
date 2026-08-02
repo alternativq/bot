@@ -293,3 +293,52 @@ async def admin_grant_trial(tg_id: int, bot: Bot | None = None) -> Subscription:
         amount_rub=0,
         bot=bot,
     )
+
+
+async def admin_delete_user_completely(tg_id: int) -> bool:
+    """Удаляет пользователя, все его подписки (из БД и 3x-ui), платежи, рефералов и промокоды."""
+    from db.models import PromoCode, PromoUsage
+    async with get_session() as session:
+        # 1. Удаляем из 3x-ui и из БД подписки
+        subs = (await session.scalars(select(Subscription).where(Subscription.user_tg_id == tg_id))).all()
+        for sub in subs:
+            client_uuid = sub.xui_uuid
+            sub_ids = sub.xui_sub_ids or {}
+            await session.delete(sub)
+            try:
+                await xui_client.delete_client(tg_id, client_uuid=client_uuid, sub_ids=sub_ids)
+            except Exception:
+                log.exception("Не удалось удалить 3x-ui клиента для %s", tg_id)
+
+        # 2. Заявки на оплату
+        pendings = (await session.scalars(select(PendingPayment).where(PendingPayment.user_tg_id == tg_id))).all()
+        for p in pendings:
+            await session.delete(p)
+
+        # 3. История платежей
+        payments = (await session.scalars(select(PaymentRecord).where(PaymentRecord.user_tg_id == tg_id))).all()
+        for pay in payments:
+            await session.delete(pay)
+
+        # 4. Использования промокодов
+        usages = (await session.scalars(select(PromoUsage).where(PromoUsage.user_tg_id == tg_id))).all()
+        for u in usages:
+            await session.delete(u)
+
+        # 5. Реферальные связи
+        refs = (await session.scalars(select(Referral).where((Referral.inviter_tg_id == tg_id) | (Referral.referred_tg_id == tg_id)))).all()
+        for r in refs:
+            await session.delete(r)
+
+        # 6. Промокоды, созданные пользователем
+        p_codes = (await session.scalars(select(PromoCode).where(PromoCode.created_by_tg_id == tg_id))).all()
+        for pc in p_codes:
+            await session.delete(pc)
+
+        # 7. Сам пользователь
+        user = await session.get(User, tg_id)
+        if user:
+            await session.delete(user)
+
+        await session.commit()
+        return True

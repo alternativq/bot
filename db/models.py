@@ -120,6 +120,7 @@ class PromoCode(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     code: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     discount_percent: Mapped[int] = mapped_column(Integer, default=10)
+    bonus_days: Mapped[int] = mapped_column(Integer, default=0)
     uses_left: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by_tg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

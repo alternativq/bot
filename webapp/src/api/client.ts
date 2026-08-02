@@ -177,3 +177,38 @@ export async function adminDeleteSubscription(targetTgId: number): Promise<{ sta
 export async function adminGrantTrial(targetTgId: number): Promise<{ status: string; period_end: string }> {
   return request(`/admin/user/${targetTgId}/grant-trial`, { method: 'POST' });
 }
+
+export async function adminDeleteUserCompletely(targetTgId: number): Promise<{ status: string }> {
+  return request(`/admin/user/${targetTgId}/delete-user`, { method: 'POST' });
+}
+
+export interface AdminPromoCode {
+  id: number;
+  code: string;
+  discount_percent: number;
+  bonus_days: number;
+  uses_left: number | null;
+  is_active: boolean;
+  created_at: string | null;
+  uses_count: number;
+}
+
+export async function adminGetPromos(): Promise<{ promos: AdminPromoCode[] }> {
+  return request('/admin/promos');
+}
+
+export async function adminCreatePromo(data: {
+  code: string;
+  discount_percent: number;
+  bonus_days: number;
+  uses_left?: number | null;
+}): Promise<{ status: string; promo: AdminPromoCode }> {
+  return request('/admin/promos', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function adminDeletePromo(promoId: number): Promise<{ status: string }> {
+  return request(`/admin/promos/${promoId}`, { method: 'DELETE' });
+}
