@@ -261,7 +261,7 @@ export function HomePage({ navigate }: HomePageProps) {
       )}
 
       {/* Noir Section Title */}
-      <div className="noir-section-title">К А Т А Л О Г  У С Л У Г</div>
+      <div className="noir-section-title">КАТАЛОГ УСЛУГ</div>
 
       {/* 2-Column Catalog Cards matching NOIR MARKET layout */}
       <div className="noir-grid">

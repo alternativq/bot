@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ArrowLeft,
   Zap,
+  ExternalLink,
 } from 'lucide-react';
 
 interface SubscriptionPageProps {
@@ -57,6 +58,20 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       showToast('Не удалось скопировать', 'error');
     }
   }, [sub, showToast]);
+
+  const launchApp = useCallback((appName: 'happ' | 'v2raytun') => {
+    if (!sub?.sub_link) return;
+    haptic('heavy');
+    copyLink();
+
+    const nameText = appName === 'happ' ? 'Happ' : 'v2raytun';
+    const scheme = `${appName}://${sub.sub_link}`;
+
+    showToast(`Ключ скопирован! Запускаем ${nameText}...`, 'info');
+    setTimeout(() => {
+      window.location.href = scheme;
+    }, 350);
+  }, [sub, haptic, copyLink, showToast]);
 
   const loadQR = useCallback(async () => {
     haptic('light');
@@ -173,7 +188,7 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       {/* Subscription link */}
       {sub.sub_link && (
         <div style={{ marginBottom: 20 }}>
-          <div className="noir-section-title">С С Ы Л К А  П О Д П И С К И</div>
+          <div className="noir-section-title">СЕКРЕТНЫЙ КЛЮЧ ПОДПИСКИ</div>
 
           <div className="card">
             <div className="copy-field" style={{ margin: 0 }}>
@@ -224,49 +239,56 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       )}
 
       {/* 2 Recommended Apps: Happ & v2raytun */}
-      <div className="noir-section-title">П Р И Л О Ж Е Н И Я  Д Л Я  П О Д К Л Ю Ч Е Н И Я</div>
+      <div className="noir-section-title">ПРИЛОЖЕНИЯ ДЛЯ ПОДКЛЮЧЕНИЯ</div>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}>
-        Универсальные приложения для iOS, Android и Windows:
+        Выберите ваше приложение и нажмите авто-запуск для быстрой настройки:
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
         {/* App 1: Happ */}
         <div className="card card-accent" style={{ padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--success)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Zap size={20} />
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 850, color: '#ffffff' }}>Happ</div>
+                <div style={{ fontSize: 16, fontWeight: 850, color: '#ffffff' }}>Happ App</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>iOS · Android · Windows</div>
               </div>
             </div>
             <span className="noir-badge">РЕКОМЕНДУЕМ</span>
           </div>
 
-          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.45 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.45 }}>
             1. Установите <strong>Happ</strong> из маркета приложений.<br />
-            2. Скопируйте ссылку-подписку выше.<br />
-            3. В приложении нажмите <strong>«+» → Импорт подписки</strong>.
+            2. Нажмите <strong>«Подключить в 1 клик»</strong> ниже — приложение запустится и подставит ключ автоматически!
           </div>
 
-          <button
-            className="btn btn-primary btn-block btn-sm"
-            onClick={() => {
-              haptic('medium');
-              copyLink();
-            }}
-          >
-            <Copy size={14} /> Скопировать ключ для Happ
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              className="btn btn-primary btn-block btn-sm"
+              onClick={() => launchApp('happ')}
+            >
+              <ExternalLink size={14} /> 🚀 Подключить в Happ (Авто-запуск)
+            </button>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => {
+                haptic('light');
+                copyLink();
+              }}
+            >
+              <Copy size={13} /> Скопировать ключ вручную
+            </button>
+          </div>
         </div>
 
         {/* App 2: v2raytun */}
         <div className="card" style={{ padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255, 255, 255, 0.1)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255, 255, 255, 0.12)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Key size={20} />
               </div>
               <div>
@@ -277,21 +299,28 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
             <span className="noir-badge noir-badge-dark">ОТЛИЧНЫЙ ВЫБОР</span>
           </div>
 
-          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.45 }}>
-            1. Установите <strong>v2raytun</strong>.<br />
-            2. Скопируйте ссылку-подписку выше.<br />
-            3. Откройте v2raytun и нажмите <strong>«Вставить подписку»</strong>.
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.45 }}>
+            1. Установите <strong>v2raytun</strong> из маркета.<br />
+            2. Нажмите <strong>«Подключить в 1 клик»</strong> для автоматического импорта.
           </div>
 
-          <button
-            className="btn btn-secondary btn-block btn-sm"
-            onClick={() => {
-              haptic('medium');
-              copyLink();
-            }}
-          >
-            <Copy size={14} /> Скопировать ключ для v2raytun
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              className="btn btn-primary btn-block btn-sm"
+              onClick={() => launchApp('v2raytun')}
+            >
+              <ExternalLink size={14} /> 🚀 Подключить в v2raytun (Авто-запуск)
+            </button>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => {
+                haptic('light');
+                copyLink();
+              }}
+            >
+              <Copy size={13} /> Скопировать ключ вручную
+            </button>
+          </div>
         </div>
       </div>
     </div>

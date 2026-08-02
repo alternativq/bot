@@ -145,7 +145,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
           </div>
         </div>
 
-        <div className="noir-section-title">В Ы Б Е Р И Т Е  О П Л А Т У</div>
+        <div className="noir-section-title">ВЫБЕРИТЕ ОПЛАТУ</div>
 
         {methods.length === 0 ? (
           <div className="empty-state">
@@ -243,7 +243,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
       )}
 
       {/* Noir Section Title */}
-      <div className="noir-section-title">Т А Р И Ф Ы  ( {groups[activeDuration].length} )</div>
+      <div className="noir-section-title">ТАРИФЫ ({groups[activeDuration].length})</div>
 
       {/* 2-Column Catalog Cards Grid matching NOIR MARKET screenshot */}
       <div className="noir-grid">

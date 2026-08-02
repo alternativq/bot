@@ -144,7 +144,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
       {/* Referral */}
       {referral && (
         <div style={{ marginBottom: 18 }}>
-          <div className="noir-section-title">Р Е Ф Е Р А Л Ь Н А Я  П Р О Г Р А М М А</div>
+          <div className="noir-section-title">РЕФЕРАЛЬНАЯ ПРОГРАММА</div>
 
           <div className="card">
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.45 }}>
@@ -174,7 +174,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
 
       {/* Promo */}
       <div style={{ marginBottom: 18 }}>
-        <div className="noir-section-title">П Р О М О К О Д</div>
+        <div className="noir-section-title">ПРОМОКОД</div>
 
         <div className="card">
           <div style={{ display: 'flex', gap: 8 }}>
@@ -215,7 +215,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
       </div>
 
       {/* Support Nav */}
-      <div className="noir-section-title">Н А В И Г А Ц И Я  И  С П Р А В К А</div>
+      <div className="noir-section-title">НАВИГАЦИЯ И СПРАВКА</div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {[
