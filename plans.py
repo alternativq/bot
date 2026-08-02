@@ -90,34 +90,6 @@ PLANS: dict[str, Plan] = {
         duration_days=90,
         limit_ip=7,
     ),
-    "m12": Plan(
-        id="m12",
-        title="12 месяцев",
-        price_rub=1690,
-        duration_days=365,
-        limit_ip=1,
-    ),
-    "m12-3": Plan(
-        id="m12-3",
-        title="12 месяцев · 3 устройства",
-        price_rub=2290,
-        duration_days=365,
-        limit_ip=3,
-    ),
-    "m12-5": Plan(
-        id="m12-5",
-        title="12 месяцев · 5 устройств",
-        price_rub=2890,
-        duration_days=365,
-        limit_ip=5,
-    ),
-    "m12-7": Plan(
-        id="m12-7",
-        title="12 месяцев · 7 устройств",
-        price_rub=3490,
-        duration_days=365,
-        limit_ip=7,
-    ),
 }
 
 # Пробный тариф добавляется в список отдельно, чтобы им нельзя было

@@ -8,6 +8,9 @@ import { PaymentPage } from './pages/PaymentPage';
 import { PlansPage } from './pages/PlansPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
+import { AdminPage } from './pages/AdminPage';
+import { getMe } from './api/client';
+import type { UserProfile } from './types';
 
 export type Page =
   | 'home'
@@ -16,7 +19,8 @@ export type Page =
   | 'history'
   | 'settings'
   | 'faq'
-  | 'payment';
+  | 'payment'
+  | 'admin';
 
 export interface PaymentContext {
   planId: string;
@@ -27,11 +31,13 @@ export default function App() {
   const [page, setPage] = useState<Page>('home');
   const [paymentCtx, setPaymentCtx] = useState<PaymentContext | null>(null);
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
     if (tg && tg.initData && tg.initData.length > 0) {
       setIsTelegram(true);
+      getMe().then(setProfile).catch(() => {});
     } else {
       setIsTelegram(false);
     }
@@ -105,6 +111,8 @@ export default function App() {
             methodId={paymentCtx?.methodId}
           />
         );
+      case 'admin':
+        return <AdminPage navigate={navigate} profile={profile} />;
       default:
         return <HomePage navigate={navigate} />;
     }
@@ -113,7 +121,7 @@ export default function App() {
   return (
     <>
       {renderPage()}
-      <BottomNav current={page} navigate={navigate} />
+      <BottomNav current={page} navigate={navigate} isAdmin={profile?.is_admin} />
     </>
   );
 }

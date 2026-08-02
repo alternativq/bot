@@ -119,6 +119,7 @@ async def get_me(request: web.Request) -> web.Response:
     result = {
         "tg_id": tg_id,
         "username": user.username,
+        "is_admin": tg_id in settings.admin_ids,
         "trial_used": user.trial_used,
         "trial_enabled": settings.TRIAL_ENABLED,
         "created_at": user.created_at.isoformat() if user.created_at else None,
@@ -462,7 +463,7 @@ async def get_subscription_qr(request: web.Request) -> web.Response:
     img = qr.make_image(fill_color="black", back_color="white")
 
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf)
     qr_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
     return _json({"qr_base64": qr_b64, "sub_link": sub_link})
@@ -571,3 +572,248 @@ async def activate_trial(request: web.Request) -> web.Response:
         await session.commit()
 
     return _json({"status": "activated"})
+
+
+# ──────────────────────────────────────────────────────────────
+# ADMIN ENDPOINTS
+# ──────────────────────────────────────────────────────────────
+
+def _check_admin(request: web.Request) -> bool:
+    tg_id = request["user"].get("tg_id")
+    return bool(tg_id and tg_id in settings.admin_ids)
+
+
+@api_routes.get("/api/v1/admin/users/search")
+async def admin_search_users(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    q = request.query.get("q", "").strip().lower()
+    async with get_session() as session:
+        if q.lstrip("-").isdigit():
+            target_id = int(q.lstrip("-"))
+            users = await session.scalars(select(User).where(User.tg_id == target_id))
+        elif q.startswith("@"):
+            uname = q[1:]
+            users = await session.scalars(select(User).where(User.username.ilike(f"%{uname}%")))
+        elif q:
+            users = await session.scalars(select(User).where(User.username.ilike(f"%{q}%")))
+        else:
+            users = await session.scalars(select(User).limit(50))
+
+        result = []
+        for u in users:
+            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == u.tg_id))
+            plan = get_plan(sub.plan_id) if sub else None
+            result.append({
+                "tg_id": u.tg_id,
+                "username": u.username,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+                "subscription": {
+                    "plan_title": plan.title if plan else sub.plan_id,
+                    "active": sub.is_active(),
+                    "disabled": sub.disabled,
+                    "period_end": sub.period_end.isoformat(),
+                } if sub else None,
+            })
+
+    return _json({"users": result})
+
+
+@api_routes.get("/api/v1/admin/user/{target_tg_id}")
+async def admin_get_user(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    async with get_session() as session:
+        user = await session.get(User, target_tg_id)
+        sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == target_tg_id))
+
+    if user is None:
+        return _error("User not found", 404)
+
+    plan = get_plan(sub.plan_id) if sub else None
+    active = sub.is_active() if sub else False
+    upload, download = await xui_client.get_client_traffic(target_tg_id)
+
+    inbounds = []
+    try:
+        raw_inbounds = await xui_client.get_all_inbounds()
+        inbounds = [
+            {"id": ib.id, "remark": ib.remark, "port": ib.port, "protocol": ib.protocol}
+            for ib in raw_inbounds
+        ]
+    except Exception:
+        log.exception("Failed to fetch 3x-ui inbounds for admin")
+
+    return _json({
+        "user": {
+            "tg_id": user.tg_id,
+            "username": user.username,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+        },
+        "subscription": {
+            "plan_id": sub.plan_id,
+            "plan_title": plan.title if plan else sub.plan_id,
+            "active": active,
+            "disabled": sub.disabled,
+            "period_end": sub.period_end.isoformat(),
+            "xui_sub_ids": sub.xui_sub_ids or {},
+        } if sub else None,
+        "traffic": {
+            "upload": upload,
+            "download": download,
+            "total_bytes": (plan.total_gb * 1024**3) if plan and plan.total_gb else 0,
+        },
+        "inbounds": inbounds,
+    })
+
+
+@api_routes.post("/api/v1/admin/user/{target_tg_id}/extend")
+async def admin_extend_user(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    try:
+        body = await request.json()
+        days = int(body.get("days", 7))
+    except Exception:
+        return _error("Invalid days argument")
+
+    from services.provisioning import admin_extend_subscription
+    try:
+        sub = await admin_extend_subscription(target_tg_id, days)
+        if sub is None:
+            return _error("Subscription not found", 404)
+        return _json({"status": "extended", "period_end": sub.period_end.isoformat()})
+    except Exception as e:
+        log.exception("Admin extend failed")
+        return _error(str(e), 500)
+
+
+@api_routes.post("/api/v1/admin/user/{target_tg_id}/toggle")
+async def admin_toggle_user(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    from services.provisioning import admin_toggle_subscription
+    try:
+        new_disabled = await admin_toggle_subscription(target_tg_id)
+        if new_disabled is None:
+            return _error("Subscription not found", 404)
+        return _json({"disabled": new_disabled})
+    except Exception as e:
+        log.exception("Admin toggle failed")
+        return _error(str(e), 500)
+
+
+@api_routes.post("/api/v1/admin/user/{target_tg_id}/add-inbound")
+async def admin_add_inbound_user(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    try:
+        body = await request.json()
+        inbound_id = int(body.get("inbound_id"))
+    except Exception:
+        return _error("Invalid inbound_id")
+
+    from services.provisioning import assign_inbound_to_subscription
+    try:
+        sub = await assign_inbound_to_subscription(target_tg_id, inbound_id)
+        if sub is None:
+            return _error("Subscription not found", 404)
+        return _json({"status": "inbound_assigned"})
+    except Exception as e:
+        log.exception("Admin add inbound failed")
+        return _error(str(e), 500)
+
+
+@api_routes.get("/api/v1/admin/pending-payments")
+async def admin_pending_payments(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    async with get_session() as session:
+        pendings = await session.scalars(
+            select(PendingPayment)
+            .where(PendingPayment.status == "pending")
+            .order_by(PendingPayment.created_at.desc())
+        )
+        result = []
+        for p in pendings:
+            user = await session.get(User, p.user_tg_id)
+            plan = get_plan(p.plan_id)
+            method = get_payment_method(p.method_id)
+            final_amount = calculate_discounted_amount(plan.price_rub if plan else 0, p.discount_percent)
+            result.append({
+                "id": p.id,
+                "user_tg_id": p.user_tg_id,
+                "username": user.username if user else None,
+                "plan_id": p.plan_id,
+                "plan_title": plan.title if plan else p.plan_id,
+                "method_id": p.method_id,
+                "method_title": method.title if method else p.method_id,
+                "order_code": p.order_code,
+                "amount_rub": final_amount,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            })
+
+    return _json({"pending": result})
+
+
+@api_routes.post("/api/v1/admin/pending-payments/{pending_id}/resolve")
+async def admin_resolve_payment(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    pending_id = int(request.match_info["pending_id"])
+    try:
+        body = await request.json()
+        action = body.get("action")
+    except Exception:
+        return _error("Invalid body")
+
+    async with get_session() as session:
+        pending = await session.get(PendingPayment, pending_id)
+        if pending is None:
+            return _error("Pending payment not found", 404)
+        if pending.status != "pending":
+            return _error(f"Payment already {pending.status}")
+
+        if action == "reject":
+            pending.status = "rejected"
+            pending.resolved_at = xui_client.dt.datetime.now(xui_client.dt.timezone.utc)
+            pending.resolved_by = request["user"]["tg_id"]
+            await session.commit()
+            return _json({"status": "rejected"})
+
+        pending.status = "processing"
+        await session.commit()
+
+    bot = request.app.get("bot")
+    from services.provisioning import handle_manual_payment_confirmed
+    try:
+        async with get_session() as session:
+            pending = await session.get(PendingPayment, pending_id)
+        await handle_manual_payment_confirmed(pending, bot)
+        async with get_session() as session:
+            pending = await session.get(PendingPayment, pending_id)
+            if pending:
+                pending.status = "confirmed"
+                pending.resolved_at = xui_client.dt.datetime.now(xui_client.dt.timezone.utc)
+                pending.resolved_by = request["user"]["tg_id"]
+                await session.commit()
+        return _json({"status": "confirmed"})
+    except Exception as e:
+        log.exception("Admin payment confirmation failed")
+        async with get_session() as session:
+            pending = await session.get(PendingPayment, pending_id)
+            if pending:
+                pending.status = "pending"
+                await session.commit()
+        return _error(str(e), 500)

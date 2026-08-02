@@ -1,10 +1,11 @@
 import type { Page } from '../App';
-import { Home, Layers, ShieldCheck, History, Settings } from 'lucide-react';
+import { Home, Layers, ShieldCheck, History, Settings, ShieldAlert } from 'lucide-react';
 import { useTelegram } from '../hooks/useTelegram';
 
 interface BottomNavProps {
   current: Page;
   navigate: (page: Page) => void;
+  isAdmin?: boolean;
 }
 
 interface NavTab {
@@ -13,16 +14,20 @@ interface NavTab {
   Icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
 }
 
-const tabs: NavTab[] = [
-  { id: 'home', label: 'ГЛАВНАЯ', Icon: Home },
-  { id: 'plans', label: 'ТАРИФЫ', Icon: Layers },
-  { id: 'subscription', label: 'VPN', Icon: ShieldCheck },
-  { id: 'history', label: 'ИСТОРИЯ', Icon: History },
-  { id: 'settings', label: 'ЕЩЁ', Icon: Settings },
-];
-
-export function BottomNav({ current, navigate }: BottomNavProps) {
+export function BottomNav({ current, navigate, isAdmin }: BottomNavProps) {
   const { haptic } = useTelegram();
+
+  const tabs: NavTab[] = [
+    { id: 'home', label: 'ГЛАВНАЯ', Icon: Home },
+    { id: 'plans', label: 'ТАРИФЫ', Icon: Layers },
+    { id: 'subscription', label: 'VPN', Icon: ShieldCheck },
+    { id: 'history', label: 'ИСТОРИЯ', Icon: History },
+    { id: 'settings', label: 'ЕЩЁ', Icon: Settings },
+  ];
+
+  if (isAdmin) {
+    tabs.push({ id: 'admin', label: 'АДМИН', Icon: ShieldAlert });
+  }
 
   return (
     <div className="noir-nav-container">

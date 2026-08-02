@@ -3,8 +3,11 @@
  * Автоматически прикрепляет JWT-токен к каждому запросу.
  */
 import type {
+  AdminUser,
+  AdminUserDetail,
   PaymentHistoryItem,
   PaymentMethod,
+  PendingPaymentAdmin,
   Plan,
   PurchaseResult,
   ReferralInfo,
@@ -126,4 +129,43 @@ export async function getReferral(): Promise<ReferralInfo> {
 
 export async function activateTrial(): Promise<{ status: string }> {
   return request('/trial/activate', { method: 'POST' });
+}
+
+/* ── Admin API ── */
+
+export async function adminSearchUsers(q: string): Promise<{ users: AdminUser[] }> {
+  return request(`/admin/users/search?q=${encodeURIComponent(q)}`);
+}
+
+export async function adminGetUser(targetTgId: number): Promise<AdminUserDetail> {
+  return request(`/admin/user/${targetTgId}`);
+}
+
+export async function adminExtendUser(targetTgId: number, days: number): Promise<{ status: string; period_end: string }> {
+  return request(`/admin/user/${targetTgId}/extend`, {
+    method: 'POST',
+    body: JSON.stringify({ days }),
+  });
+}
+
+export async function adminToggleUser(targetTgId: number): Promise<{ disabled: boolean }> {
+  return request(`/admin/user/${targetTgId}/toggle`, { method: 'POST' });
+}
+
+export async function adminAddInbound(targetTgId: number, inboundId: number): Promise<{ status: string }> {
+  return request(`/admin/user/${targetTgId}/add-inbound`, {
+    method: 'POST',
+    body: JSON.stringify({ inbound_id: inboundId }),
+  });
+}
+
+export async function adminGetPendingPayments(): Promise<{ pending: PendingPaymentAdmin[] }> {
+  return request('/admin/pending-payments');
+}
+
+export async function adminResolvePayment(pendingId: number, action: 'confirm' | 'reject'): Promise<{ status: string }> {
+  return request(`/admin/pending-payments/${pendingId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+  });
 }

@@ -22,7 +22,6 @@ interface PlansPageProps {
 const DURATION_LABELS: Record<DurationGroup, string> = {
   m1: '1 Месяц',
   m3: '3 Месяца',
-  m12: '12 Месяцев',
 };
 
 export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
@@ -197,7 +196,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
 
       {/* Noir Pill Filter Scroll Bar */}
       <div className="noir-pills-scroll">
-        {(['m1', 'm3', 'm12'] as DurationGroup[]).map((d) => {
+        {(['m1', 'm3'] as DurationGroup[]).map((d) => {
           const isActive = activeDuration === d;
           const count = groups[d].length;
 

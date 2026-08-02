@@ -51,6 +51,7 @@ export interface SubscriptionInfo {
 export interface UserProfile {
   tg_id: number;
   username: string | null;
+  is_admin?: boolean;
   trial_used: boolean;
   trial_enabled: boolean;
   created_at: string | null;
@@ -87,21 +88,69 @@ export interface ReferralInfo {
   referral_link: string;
 }
 
+export interface AdminUser {
+  tg_id: number;
+  username: string | null;
+  created_at: string | null;
+  subscription: {
+    plan_title: string;
+    active: boolean;
+    disabled: boolean;
+    period_end: string;
+  } | null;
+}
+
+export interface InboundItem {
+  id: number;
+  remark: string;
+  port: number;
+  protocol: string;
+}
+
+export interface AdminUserDetail {
+  user: {
+    tg_id: number;
+    username: string | null;
+    created_at: string | null;
+  };
+  subscription: {
+    plan_id: string;
+    plan_title: string;
+    active: boolean;
+    disabled: boolean;
+    period_end: string;
+    xui_sub_ids: Record<string, string>;
+  } | null;
+  traffic: TrafficInfo;
+  inbounds: InboundItem[];
+}
+
+export interface PendingPaymentAdmin {
+  id: number;
+  user_tg_id: number;
+  username: string | null;
+  plan_id: string;
+  plan_title: string;
+  method_id: string;
+  method_title: string;
+  order_code: string;
+  amount_rub: number;
+  created_at: string | null;
+}
+
 /* ── Группировка тарифов по длительности ── */
-export type DurationGroup = 'm1' | 'm3' | 'm12';
+export type DurationGroup = 'm1' | 'm3';
 
 export function groupPlansByDuration(plans: Plan[]): Record<DurationGroup, Plan[]> {
   const groups: Record<DurationGroup, Plan[]> = {
     m1: [],
     m3: [],
-    m12: [],
   };
 
   for (const plan of plans) {
     if (plan.is_trial) continue;
     if (plan.duration_days <= 31) groups.m1.push(plan);
-    else if (plan.duration_days <= 91) groups.m3.push(plan);
-    else groups.m12.push(plan);
+    else groups.m3.push(plan);
   }
 
   return groups;

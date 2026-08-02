@@ -28,7 +28,7 @@ def get_payment_methods() -> list[PaymentMethod]:
         methods.append(
             PaymentMethod(
                 id="yoomoney_auto",
-                title="💳 Карта РФ / ЮMoney (авто)",
+                title="💳 SberPay / Карта РФ (авто)",
                 requisite_label="Автоматическая оплата",
                 requisite="Оплата картой любого банка РФ / ЮMoney 24/7",
             )
