@@ -12,7 +12,6 @@ import {
   RefreshCw,
   ArrowLeft,
   Zap,
-  ExternalLink,
 } from 'lucide-react';
 
 interface SubscriptionPageProps {
@@ -58,24 +57,6 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       showToast('Не удалось скопировать', 'error');
     }
   }, [sub, showToast]);
-
-  const launchApp = useCallback((appName: 'happ' | 'v2raytun') => {
-    if (!sub?.sub_link) return;
-    haptic('heavy');
-    copyLink();
-
-    const baseUrl = 'https://mindmorow.com.ru/sub/launch';
-    const redirectUrl = `${baseUrl}?app=${appName}&url=${encodeURIComponent(sub.sub_link)}`;
-
-    showToast(`Запускаем ${appName === 'happ' ? 'Happ' : 'v2raytun'}...`, 'info');
-
-    const tg = (window as unknown as { Telegram?: { WebApp?: { openLink?: (url: string) => void } } }).Telegram?.WebApp;
-    if (tg?.openLink) {
-      tg.openLink(redirectUrl);
-    } else {
-      window.open(redirectUrl, '_blank');
-    }
-  }, [sub, haptic, copyLink, showToast]);
 
   const loadQR = useCallback(async () => {
     haptic('light');
@@ -245,7 +226,7 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       {/* 2 Recommended Apps: Happ & v2raytun */}
       <div className="noir-section-title">ПРИЛОЖЕНИЯ ДЛЯ ПОДКЛЮЧЕНИЯ</div>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}>
-        Выберите ваше приложение и нажмите авто-запуск для быстрой настройки:
+        Выберите ваше приложение и скопируйте ключ для настройки:
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
@@ -266,26 +247,19 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
 
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.45 }}>
             1. Установите <strong>Happ</strong> из App Store / Google Play.<br />
-            2. Нажмите <strong>«Подключить в 1 клик»</strong> — приложение откроется автоматически!
+            2. Скопируйте ключ подписки кнопкой ниже.<br />
+            3. В Happ нажмите <strong>«+» → Импорт из буфера</strong>.
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button
-              className="btn btn-primary btn-block btn-sm"
-              onClick={() => launchApp('happ')}
-            >
-              <ExternalLink size={14} /> 🚀 Подключить в Happ (Авто-запуск)
-            </button>
-            <button
-              className="btn btn-secondary btn-block btn-sm"
-              onClick={() => {
-                haptic('light');
-                copyLink();
-              }}
-            >
-              <Copy size={13} /> Скопировать ключ вручную
-            </button>
-          </div>
+          <button
+            className="btn btn-primary btn-block btn-sm"
+            onClick={() => {
+              haptic('medium');
+              copyLink();
+            }}
+          >
+            <Copy size={14} /> Скопировать ключ для Happ
+          </button>
         </div>
 
         {/* App 2: v2raytun */}
@@ -305,26 +279,19 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
 
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.45 }}>
             1. Установите <strong>v2raytun</strong> из маркета.<br />
-            2. Нажмите <strong>«Подключить в 1 клик»</strong> для импорта.
+            2. Скопируйте ключ подписки кнопкой ниже.<br />
+            3. В v2raytun нажмите <strong>«Вставить подписку»</strong>.
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button
-              className="btn btn-primary btn-block btn-sm"
-              onClick={() => launchApp('v2raytun')}
-            >
-              <ExternalLink size={14} /> 🚀 Подключить в v2raytun (Авто-запуск)
-            </button>
-            <button
-              className="btn btn-secondary btn-block btn-sm"
-              onClick={() => {
-                haptic('light');
-                copyLink();
-              }}
-            >
-              <Copy size={13} /> Скопировать ключ вручную
-            </button>
-          </div>
+          <button
+            className="btn btn-secondary btn-block btn-sm"
+            onClick={() => {
+              haptic('medium');
+              copyLink();
+            }}
+          >
+            <Copy size={14} /> Скопировать ключ для v2raytun
+          </button>
         </div>
       </div>
     </div>
