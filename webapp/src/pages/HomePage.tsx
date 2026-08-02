@@ -133,7 +133,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </div>
 
-      {/* Interactive Pulse Ring Connection Widget */}
+      {/* Ultra-Luxury Cyber Shield Connection Widget */}
       <div
         className="pulse-ring-wrapper"
         onClick={() => {
@@ -145,19 +145,23 @@ export function HomePage({ navigate }: HomePageProps) {
           }
         }}
       >
+        <div className={`pulse-ring-status-badge ${sub?.active ? 'active' : 'inactive'}`}>
+          ● {sub?.active ? 'ЗАЩИТА АКТИВНА · 1000 МБ/С' : 'ОТКЛЮЧЕНО · НЕТ ПОДПИСКИ'}
+        </div>
+
         <div className={`pulse-ring-outer ${sub?.active ? 'pulse-ring-active' : 'pulse-ring-inactive'}`}>
           {sub?.active && <div className="pulse-ring-wave" />}
           <div className="pulse-ring-inner">
-            <ShieldCheck size={42} style={{ color: sub?.active ? 'var(--success)' : 'var(--danger)' }} />
+            <ShieldCheck size={46} style={{ color: sub?.active ? '#10b981' : '#ef4444' }} />
           </div>
         </div>
 
         <div className="pulse-ring-text-main">
-          {sub?.active ? 'Защита VeiloraVPN Активна' : 'Подключение Отключено'}
+          {sub?.active ? 'VeiloraVPN Подключение' : 'Нажмите для подписки'}
         </div>
         <div className="pulse-ring-text-sub">
-          <Zap size={13} style={{ color: sub?.active ? 'var(--success)' : 'var(--text-muted)' }} />
-          <span>{sub?.active ? 'Скорость до 1000 МБ/с · Нажмите скопировать ключ' : 'Нажмите для выбора тарифа'}</span>
+          <Zap size={13} style={{ color: sub?.active ? '#10b981' : 'var(--text-muted)' }} />
+          <span>{sub?.active ? 'Нажмите, чтобы скопировать ключ в 1 клик' : 'Перейти в каталог тарифов →'}</span>
         </div>
       </div>
 

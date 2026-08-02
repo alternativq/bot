@@ -219,7 +219,7 @@ body {
 }
 
 /* ══════════════════════════════════════════
-   Pulse Ring Interactive Connection Widget
+   Ultra-Luxury Cyber Shield Connection Widget
    ══════════════════════════════════════════ */
 .pulse-ring-wrapper {
   position: relative;
@@ -227,92 +227,128 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  padding: 28px 20px;
+  margin-bottom: 22px;
+  background: radial-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.025) 50%, rgba(7, 7, 9, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-xl);
   cursor: pointer;
   overflow: hidden;
-  transition: all 0.25s var(--ease-out);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.28s var(--ease-out);
+}
+
+.pulse-ring-wrapper:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 20px 48px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .pulse-ring-wrapper:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .pulse-ring-outer {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .pulse-ring-active {
-  box-shadow: 0 0 35px rgba(16, 185, 129, 0.35);
-  border: 2px solid var(--success);
+  box-shadow: 0 0 50px rgba(16, 185, 129, 0.45);
+  border: 2px solid rgba(16, 185, 129, 0.8);
 }
 
 .pulse-ring-inactive {
-  box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
-  border: 2px solid var(--danger);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+  border: 2px solid rgba(239, 68, 68, 0.6);
 }
 
 .pulse-ring-wave {
   position: absolute;
-  top: -6px;
-  left: -6px;
-  right: -6px;
-  bottom: -6px;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
   border-radius: 50%;
-  border: 2px solid var(--success);
+  border: 1.5px solid rgba(16, 185, 129, 0.7);
   opacity: 0.6;
-  animation: pulseWave 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  animation: pulseWave 2.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
 @keyframes pulseWave {
   0% {
-    transform: scale(0.95);
-    opacity: 0.8;
+    transform: scale(0.92);
+    opacity: 0.85;
   }
-  50% {
-    transform: scale(1.18);
+  60% {
+    transform: scale(1.22);
     opacity: 0;
   }
   100% {
-    transform: scale(0.95);
+    transform: scale(0.92);
     opacity: 0;
   }
 }
 
 .pulse-ring-inner {
-  width: 86px;
-  height: 86px;
+  width: 94px;
+  height: 94px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(7, 7, 9, 0.9) 100%);
+  background: radial-gradient(circle at 35% 35%, rgba(16, 185, 129, 0.35) 0%, rgba(7, 7, 9, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
   z-index: 2;
+  box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.pulse-ring-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.pulse-ring-status-badge.active {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.pulse-ring-status-badge.inactive {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .pulse-ring-text-main {
-  font-size: 16px;
-  font-weight: 850;
+  font-size: 17px;
+  font-weight: 900;
   color: #ffffff;
   margin-bottom: 4px;
   text-align: center;
+  letter-spacing: -0.01em;
 }
 
 .pulse-ring-text-sub {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   display: flex;
