@@ -817,3 +817,20 @@ async def admin_resolve_payment(request: web.Request) -> web.Response:
                 pending.status = "pending"
                 await session.commit()
         return _error(str(e), 500)
+
+
+@api_routes.post("/api/v1/admin/user/{target_tg_id}/delete-sub")
+async def admin_delete_user_sub(request: web.Request) -> web.Response:
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    target_tg_id = int(request.match_info["target_tg_id"])
+    from services.provisioning import admin_delete_subscription
+    try:
+        deleted = await admin_delete_subscription(target_tg_id)
+        if not deleted:
+            return _error("Subscription not found", 404)
+        return _json({"status": "deleted"})
+    except Exception as e:
+        log.exception("Admin delete subscription failed")
+        return _error(str(e), 500)

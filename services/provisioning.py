@@ -244,3 +244,20 @@ async def admin_toggle_subscription(tg_id: int) -> bool | None:
 
     await xui_client.set_client_enabled(tg_id, enabled=not new_disabled)
     return new_disabled
+
+
+async def admin_delete_subscription(tg_id: int) -> bool:
+    """Удаляет подписку пользователя из базы данных и отключает клиента в 3X-UI."""
+    async with get_session() as session:
+        sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id))
+        if sub is None:
+            return False
+        await session.delete(sub)
+        await session.commit()
+
+    try:
+        await xui_client.set_client_enabled(tg_id, enabled=False)
+    except Exception:
+        log.exception("Failed to disable 3x-ui client for deleted sub %s", tg_id)
+
+    return True

@@ -169,3 +169,7 @@ export async function adminResolvePayment(pendingId: number, action: 'confirm' |
     body: JSON.stringify({ action }),
   });
 }
+
+export async function adminDeleteSubscription(targetTgId: number): Promise<{ status: string }> {
+  return request(`/admin/user/${targetTgId}/delete-sub`, { method: 'POST' });
+}

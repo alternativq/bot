@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Page } from '../App';
 import {
   adminAddInbound,
+  adminDeleteSubscription,
   adminExtendUser,
   adminGetPendingPayments,
   adminGetUser,
@@ -29,6 +30,7 @@ import {
   Server,
   Plus,
   Zap,
+  Trash2,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -143,6 +145,20 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
       handleSelectUser(selectedUser.user.tg_id);
     } catch (err: any) {
       showToast(err.message || 'Ошибка изменения статуса', 'error');
+    }
+  };
+
+  // Delete user subscription
+  const handleDeleteSub = async () => {
+    if (!selectedUser) return;
+    if (!window.confirm('Вы уверены, что хотите полностью удалить подписку этого пользователя?')) return;
+    haptic('heavy');
+    try {
+      await adminDeleteSubscription(selectedUser.user.tg_id);
+      showToast('Подписка пользователя успешно удалена', 'success');
+      handleSelectUser(selectedUser.user.tg_id);
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка удаления подписки', 'error');
     }
   };
 
@@ -312,14 +328,26 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
             </button>
           </div>
 
-          <button
-            className="btn btn-block"
-            style={{ background: selectedUser.subscription?.disabled ? 'var(--success)' : 'rgba(239, 68, 68, 0.2)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.15)', marginBottom: 12 }}
-            onClick={handleToggle}
-          >
-            {selectedUser.subscription?.disabled ? <UserCheck size={16} /> : <UserX size={16} />}
-            <span>{selectedUser.subscription?.disabled ? 'Включить доступ' : 'Отключить доступ'}</span>
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 10 }}>
+            <button
+              className="btn btn-block"
+              style={{ background: selectedUser.subscription?.disabled ? 'var(--success)' : 'rgba(255, 255, 255, 0.08)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.15)' }}
+              onClick={handleToggle}
+            >
+              {selectedUser.subscription?.disabled ? <UserCheck size={16} /> : <UserX size={16} />}
+              <span>{selectedUser.subscription?.disabled ? 'Включить' : 'Отключить'}</span>
+            </button>
+
+            <button
+              className="btn btn-block"
+              style={{ background: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)', border: '1px solid var(--danger)' }}
+              onClick={handleDeleteSub}
+              disabled={!selectedUser.subscription}
+            >
+              <Trash2 size={16} />
+              <span>Удалить</span>
+            </button>
+          </div>
 
           {/* Inbounds list */}
           <div className="card" style={{ marginBottom: 16 }}>

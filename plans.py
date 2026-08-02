@@ -30,7 +30,7 @@ class Plan:
         if self.is_trial or self.price_rub <= 0:
             return 0.0
         # Конвертация рубль -> USDT по курсу ~95 ₽ за 1 USDT
-        return round(max(0.5, self.price_rub / 95.0), 2)
+        return round(max(0.5, self.price_rub / 80.0), 2)
 
 
 PLANS: dict[str, Plan] = {
@@ -44,42 +44,42 @@ PLANS: dict[str, Plan] = {
     "m1-3": Plan(
         id="m1-3",
         title="1 месяц · 3 устройства",
-        price_rub=249,
+        price_rub=289,
         duration_days=30,
         limit_ip=3,
     ),
     "m1-5": Plan(
         id="m1-5",
         title="1 месяц · 5 устройств",
-        price_rub=349,
+        price_rub=389,
         duration_days=30,
         limit_ip=5,
     ),
     "m1-7": Plan(
         id="m1-7",
         title="1 месяц · 7 устройств",
-        price_rub=449,
+        price_rub=489,
         duration_days=30,
         limit_ip=7,
     ),
     "m3": Plan(
         id="m3",
         title="3 месяца",
-        price_rub=399,
+        price_rub=449,
         duration_days=90,
         limit_ip=1,
     ),
     "m3-3": Plan(
         id="m3-3",
         title="3 месяца · 3 устройства",
-        price_rub=599,
+        price_rub=589,
         duration_days=90,
         limit_ip=3,
     ),
     "m3-5": Plan(
         id="m3-5",
         title="3 месяца · 5 устройств",
-        price_rub=799,
+        price_rub=789,
         duration_days=90,
         limit_ip=5,
     ),

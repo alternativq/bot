@@ -50,8 +50,8 @@ def get_payment_methods() -> list[PaymentMethod]:
         methods.append(
             PaymentMethod(
                 id="ozon",
-                title="Ozon Банк (ручной СБП)",
-                requisite_label="Номер карты/телефон Ozon Банк",
+                title="Карта Ozon Банк",
+                requisite_label="Перевод на карту Ozon Банк",
                 requisite=settings.OZON_REQUISITE,
             )
         )
