@@ -288,7 +288,7 @@ async def admin_grant_trial(tg_id: int, bot: Bot | None = None) -> Subscription:
     return await _finalize_purchase(
         tg_id=tg_id,
         plan=TRIAL_PLAN,
-        external_id=f"admin_trial:{tg_id}",
+        external_id=f"admin_trial:{tg_id}:{secrets.token_hex(4)}",
         provider="admin_trial",
         amount_rub=0,
         bot=bot,
