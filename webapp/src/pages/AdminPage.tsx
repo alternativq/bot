@@ -956,6 +956,19 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
               }}
             />
 
+            {broadcastMsg.trim() && (
+              <div style={{ marginBottom: 14, padding: '12px 14px', background: 'rgba(255, 255, 255, 0.04)', border: '1px dashed var(--glass-border)', borderRadius: 12 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
+                  ПРЕДПРОСМОТР В TELEGRAM:
+                </div>
+                <div style={{ fontSize: 13, color: '#ffffff', whiteSpace: 'pre-wrap', lineHeight: 1.45, fontFamily: 'sans-serif' }}>
+                  <strong>📢 УВЕДОМЛЕНИЕ ОТ VEILORAVPN</strong><br />
+                  ────────────────────────<br />
+                  {broadcastMsg}
+                </div>
+              </div>
+            )}
+
             <button
               className="btn btn-primary btn-block"
               disabled={sendingBroadcast || !broadcastMsg.trim()}

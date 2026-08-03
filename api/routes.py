@@ -1033,6 +1033,11 @@ async def admin_broadcast(request: web.Request) -> web.Response:
     if not message_text:
         return _error("Введите текст сообщения")
 
+    if "УВЕДОМЛЕНИЕ" in message_text.upper() or "ОПОВЕЩЕНИЕ" in message_text.upper():
+        formatted_text = message_text
+    else:
+        formatted_text = f"<b>📢 УВЕДОМЛЕНИЕ ОТ VEILORAVPN</b>\n────────────────────────\n\n{message_text}"
+
     bot = request.app.get("bot")
     if not bot:
         return _error("Bot not configured")
@@ -1050,7 +1055,7 @@ async def admin_broadcast(request: web.Request) -> web.Response:
         try:
             await bot.send_message(
                 u.tg_id,
-                message_text,
+                formatted_text,
                 parse_mode="HTML",
                 disable_web_page_preview=True
             )
