@@ -94,6 +94,7 @@ body {
   padding: calc(12px + var(--safe-top)) 14px calc(var(--nav-height) + var(--safe-bottom) + 28px);
   animation: pageFade 0.42s var(--ease-out);
   width: 100%;
+  transform: translateZ(0);
 }
 
 @keyframes pageFade {
@@ -200,6 +201,8 @@ body {
   display: inline-flex;
   gap: 16px;
   animation: tickerMove 38s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .noir-ticker-item {
@@ -271,6 +274,8 @@ body {
   border: 1.5px solid rgba(255, 255, 255, 0.8);
   opacity: 0.7;
   animation: pulseWave 2.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
 }
 
 @keyframes pulseWave {
@@ -449,6 +454,8 @@ body {
   box-shadow: var(--shadow-noir);
   transition: all 0.2s var(--ease-out);
   overflow: hidden;
+  transform: translateZ(0);
+  contain: layout style;
 }
 
 .card-interactive {
@@ -651,6 +658,7 @@ body {
   border: 1px solid var(--glass-border-light);
   border-radius: var(--radius-pill);
   box-shadow: 0 14px 44px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: translateZ(0);
 }
 
 .noir-nav-tab {

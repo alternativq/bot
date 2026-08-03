@@ -3,7 +3,7 @@ import type { Page } from '../App';
 import { getPlans, getPaymentMethods, activateTrial } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
-import logoImg from '../assets/logo.jpg';
+import logoImg from '../assets/logo.webp';
 import type { Plan, PaymentMethod, DurationGroup } from '../types';
 import { groupPlansByDuration } from '../types';
 import {
