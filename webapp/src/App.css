@@ -94,7 +94,6 @@ body {
   padding: calc(12px + var(--safe-top)) 14px calc(var(--nav-height) + var(--safe-bottom) + 28px);
   animation: pageFade 0.42s var(--ease-out);
   width: 100%;
-  transform: translateZ(0);
 }
 
 @keyframes pageFade {
