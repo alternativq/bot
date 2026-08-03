@@ -208,13 +208,19 @@ async def admin_extend_subscription(tg_id: int, days: int) -> Subscription | Non
         plan = get_plan(plan_id) or next(iter(PLANS.values()))
 
         if sub is None:
+            if await session.get(User, tg_id) is None:
+                session.add(User(tg_id=tg_id))
+                await session.flush()
             sub = Subscription(
                 user_tg_id=tg_id,
                 plan_id=plan.id,
+                xui_uuid=f"tg{tg_id}",
                 period_end=new_period_end,
-                public_token=uuid.uuid4().hex,
+                public_token=secrets.token_urlsafe(24),
             )
             session.add(sub)
+
+
         else:
             sub.period_end = new_period_end
 

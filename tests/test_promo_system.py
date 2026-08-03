@@ -1,18 +1,20 @@
 import asyncio
 import datetime as dt
 import os
-from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+from aiohttp.test_utils import TestClient, TestServer
 
 os.environ.setdefault("BOT_TOKEN", "test-token")
 os.environ.setdefault("BOT_USERNAME", "test-bot")
 os.environ.setdefault("XUI_HOST", "https://example.com")
 os.environ.setdefault("SUB_DOMAIN", "example.com")
 
-from bot import keyboards
-from bot.handlers import handle_text_message
-from bot.texts import my_subscription_message
-from db.database import reset_db
-from plans import Plan
+import sub_server
+from api.auth import create_jwt
+from config import settings
+from db.database import get_session, reset_db
+from db.models import User
 from services.promo_system import (
     apply_code,
     build_referral_code,
@@ -40,46 +42,15 @@ def test_numeric_code_is_treated_as_referral() -> None:
     assert looks_like_promo_code("123456") is True
 
 
-def test_my_subscription_message_contains_bonus_section() -> None:
-    plan = Plan(id="m1", title="1 месяц", price_rub=199, duration_days=30)
-    message = my_subscription_message(
-        plan,
-        dt.datetime(2026, 1, 1, 12, 0),
-        True,
-        [],
-        discount_percent=0,
-        referral_code="ref123",
-        bonus_days=5,
-    )
-    assert "Бонусы/рефералы" in message
-    assert "Реферальный код: ref123" in message
-    assert "Бонус: +5 дней" in message
-
-
-def test_main_menu_contains_referral_button() -> None:
-    keyboard = keyboards.main_menu_keyboard()
-    buttons = [button.text for row in keyboard.keyboard for button in row]
-    assert keyboards.BTN_REF in buttons
-
-
-def test_handle_text_message_routes_promo_button(monkeypatch) -> None:
-    calls = []
-
-    async def fake_promo_command(message) -> None:
-        calls.append(message.text)
-
-    monkeypatch.setattr("bot.handlers.promo_command", fake_promo_command)
-    message = SimpleNamespace(text=keyboards.BTN_PROMO)
-
-    asyncio.run(handle_text_message(message))
-
-    assert calls == [keyboards.BTN_PROMO]
-
-
 async def async_tests() -> None:
     await reset_db()
 
     # 1. Свой реферальный код использовать нельзя
+    async with get_session() as session:
+        session.add(User(tg_id=100))
+        session.add(User(tg_id=200))
+        await session.commit()
+
     code = await ensure_referral_code(100)
     ok, msg = await apply_code(100, code)
     assert ok is False
@@ -94,6 +65,27 @@ async def async_tests() -> None:
     assert ok_other is True
     assert "применён" in msg_other.lower()
 
+    # 3. Проверка REST API /api/v1/promo/apply
+    app = sub_server.create_app()
+    server = TestServer(app)
+    client = TestClient(server)
+    await client.start_server()
+
+    try:
+        with patch.object(settings, "BOT_TOKEN", "test_bot_token_123"):
+            token_user = create_jwt({"id": 200, "username": "user200"})
+            headers_user = {"Authorization": f"Bearer {token_user}"}
+
+            # Свой реферальный код -> success: False
+            resp_bad = await client.post("/api/v1/promo/apply", json={"code": "200"}, headers=headers_user)
+            assert resp_bad.status == 200
+            data_bad = await resp_bad.json()
+            assert data_bad.get("success") is False
+            print("OK: REST API /api/v1/promo/apply отклоняет собственный реферальный код (success: False)")
+
+    finally:
+        await client.close()
+
     print("PROMO SYSTEM ASYNC TESTS: ALL PASSED")
 
 
@@ -102,6 +94,5 @@ if __name__ == "__main__":
     test_discounted_amount_is_calculated_rounding_down()
     test_build_referral_code_uses_tg_id()
     test_numeric_code_is_treated_as_referral()
-    test_my_subscription_message_contains_bonus_section()
-    test_main_menu_contains_referral_button()
     asyncio.run(async_tests())
+

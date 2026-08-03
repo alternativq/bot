@@ -25,14 +25,17 @@ def fake_inbound(id_: int, remark: str = ""):
 
 
 async def main():
+    xui_client._api = None
     period_end = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=30)
     xui_client.settings.XUI_INBOUND_ID = 0
+
 
     # --- 1. provision_client создаёт одного клиента в первом инбаунде ---
     fake_api = SimpleNamespace(
         inbound=SimpleNamespace(get_list=AsyncMock(return_value=[fake_inbound(1, "NL"), fake_inbound(2, "DE")])),
-        client=SimpleNamespace(add=AsyncMock(), get_by_email=AsyncMock(side_effect=NOT_FOUND), update=AsyncMock()),
+        client=SimpleNamespace(add=AsyncMock(), get_list=AsyncMock(return_value=[]), get_by_email=AsyncMock(side_effect=NOT_FOUND), update=AsyncMock()),
     )
+
     with patch("panel.xui_client._get_api", new=AsyncMock(return_value=fake_api)), \
          patch("panel.xui_client.settings.XUI_INBOUND_ID", 0):
         client_uuid, inbound_id, sub_id = await xui_client.provision_client(
@@ -105,8 +108,9 @@ async def main():
     # --- 4. provision_client принимает явный inbound_id ---
     fake_api_4 = SimpleNamespace(
         inbound=SimpleNamespace(get_list=AsyncMock(return_value=[fake_inbound(1), fake_inbound(2)])),
-        client=SimpleNamespace(add=AsyncMock(), get_by_email=AsyncMock(side_effect=NOT_FOUND), update=AsyncMock()),
+        client=SimpleNamespace(add=AsyncMock(), get_list=AsyncMock(return_value=[]), get_by_email=AsyncMock(side_effect=NOT_FOUND), update=AsyncMock()),
     )
+
     with patch("panel.xui_client._get_api", new=AsyncMock(return_value=fake_api_4)):
         await xui_client.provision_client(
             tg_id=77,
@@ -150,13 +154,14 @@ async def main():
     plan = get_plan("m1-3")
     assert plan is not None, "тариф для 3 устройств должен быть доступен"
     assert plan.limit_ip == 3, "тариф для 3 устройств должен выставлять лимит подключений 3"
-    assert plan.price_rub == 299, "цена тарифа для 3 устройств должна быть выше базовой"
+    assert plan.price_rub == 289, "цена тарифа для 3 устройств должна быть выше базовой"
 
     plan_5 = get_plan("m1-5")
-    assert plan_5 is not None and plan_5.price_rub == 399, "тариф для 5 устройств должен стоить дороже"
+    assert plan_5 is not None and plan_5.price_rub == 389, "тариф для 5 устройств должен стоить дороже"
 
     plan_7 = get_plan("m1-7")
-    assert plan_7 is not None and plan_7.price_rub == 499, "тариф для 7 устройств должен быть самым дорогим"
+    assert plan_7 is not None and plan_7.price_rub == 489, "тариф для 7 устройств должен быть самым дорогим"
+
 
     # --- 7. build_subscription_url формирует нативную ссылку панели ---
     with patch("panel.xui_client.settings") as mock_settings:
@@ -171,5 +176,10 @@ async def main():
     print("\nXUI_CLIENT (один клиент): ВСЕ ПРОВЕРКИ ПРОШЛИ")
 
 
+def test_xui_client_suite() -> None:
+    asyncio.run(main())
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+

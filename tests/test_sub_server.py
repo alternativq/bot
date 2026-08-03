@@ -32,6 +32,9 @@ async def main():
 
     async with get_session() as session:
         session.add(User(tg_id=42))
+        await session.commit()
+
+    async with get_session() as session:
         session.add(
             Subscription(
                 user_tg_id=42,
@@ -44,11 +47,13 @@ async def main():
         )
         await session.commit()
 
-    async def fake_fetch(sub_id: str):
+
+    async def fake_fetch(sub_id: str, session=None):
         # разный трафик на разных инбаундах - должен просуммироваться
         if sub_id == "sub-nl":
             return [f"vless://config-for-{sub_id}"], SubUserInfo(upload=100, download=200, total=1000, expire=99999)
         return [f"vless://config-for-{sub_id}"], SubUserInfo(upload=10, download=20, total=1000, expire=99999)
+
 
     app = sub_server.create_app()
     with patch.object(xui_client, "fetch_native_configs", new=AsyncMock(side_effect=fake_fetch)):
@@ -88,5 +93,10 @@ async def main():
     print("\nSUB_SERVER: ВСЕ ПРОВЕРКИ ПРОШЛИ")
 
 
+def test_sub_server_suite() -> None:
+    asyncio.run(main())
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+

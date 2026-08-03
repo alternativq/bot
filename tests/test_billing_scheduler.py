@@ -32,6 +32,7 @@ async def main():
     # --- Сценарий 1: обычная подписка истекает через 10 часов (< окна в 2 дня) ---
     async with get_session() as session:
         session.add(User(tg_id=2001))
+        await session.flush()
         session.add(
             Subscription(
                 user_tg_id=2001,
@@ -43,6 +44,7 @@ async def main():
             )
         )
         await session.commit()
+
 
     await billing_scheduler.run_expiry_reminders(bot)
 
@@ -61,6 +63,7 @@ async def main():
     # --- Сценарий 2: подписка ДАЛЕКО от истечения не трогается ---
     async with get_session() as session:
         session.add(User(tg_id=2002))
+        await session.flush()
         session.add(
             Subscription(
                 user_tg_id=2002,
@@ -80,6 +83,7 @@ async def main():
     # --- Сценарий 3: пробная подписка получает отдельный текст ---
     async with get_session() as session:
         session.add(User(tg_id=2003))
+        await session.flush()
         session.add(
             Subscription(
                 user_tg_id=2003,
@@ -99,6 +103,7 @@ async def main():
     # --- Сценарий 4: уже истёкшая (не должна получить напоминание "скоро истечёт") ---
     async with get_session() as session:
         session.add(User(tg_id=2004))
+        await session.flush()
         session.add(
             Subscription(
                 user_tg_id=2004,
@@ -111,6 +116,7 @@ async def main():
         )
         await session.commit()
 
+
     await billing_scheduler.run_expiry_reminders(bot)
     assert not any(cid == 2004 for cid, _ in bot.sent)
     print("OK: уже истёкшие подписки не получают напоминание 'скоро истечёт'")
@@ -118,5 +124,10 @@ async def main():
     print("\nНАПОМИНАНИЯ: ВСЕ ПРОВЕРКИ ПРОШЛИ")
 
 
+def test_billing_scheduler_suite() -> None:
+    asyncio.run(main())
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+

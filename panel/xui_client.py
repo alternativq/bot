@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime as dt
+import logging
 import uuid
 from dataclasses import dataclass
 
@@ -25,6 +26,9 @@ import pyotp
 from py3xui import AsyncApi, Client
 
 from config import settings
+
+log = logging.getLogger(__name__)
+
 
 GB = 1024 ** 3
 
@@ -421,8 +425,10 @@ async def build_unified_subscription_content(sub_ids: dict[int, str]) -> tuple[s
 
     connector = aiohttp.TCPConnector(ssl=settings.SUB_FETCH_VERIFY_TLS)
     async with aiohttp.ClientSession(connector=connector) as session:
-        tasks = [fetch_native_configs(sub_id, session=session) for sub_id in sub_ids.values()]
+        fetch_fn = globals()["fetch_native_configs"]
+        tasks = [fetch_fn(sub_id, session=session) for sub_id in sub_ids.values()]
         results = await asyncio.gather(*tasks, return_exceptions=True)
+
 
     all_lines: list[str] = []
     total_upload = 0

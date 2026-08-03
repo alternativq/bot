@@ -1,50 +1,33 @@
 """
-Тест админ-панели: /admin <tg_id>, продление подписки, включение/отключение
-клиента, пересинхронизация инбаундов - и что всё это недоступно не-админам.
-py3xui и Telegram полностью замокан. Запуск из корня проекта:
+Тест админ-панели: продление подписки, включение/отключение
+клиента, REST API /api/v1/admin/* эндпоинты и разграничение прав.
 
+Запуск из корня проекта:
     python -m tests.test_admin
 """
 from __future__ import annotations
 
 import asyncio
 import datetime as dt
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
+from aiohttp.test_utils import TestClient, TestServer
 from sqlalchemy import select
 
 import panel.xui_client as xui_client
-from bot.handlers import admin_extend, admin_find_user, admin_resync, admin_toggle
+import sub_server
+from api.auth import create_jwt
 from config import settings
 from db.database import get_session, reset_db
 from db.models import Subscription, User
 from services.provisioning import admin_extend_subscription, admin_toggle_subscription
 
 
-def fake_message(text: str, user_id: int):
-    msg = MagicMock()
-    msg.text = text
-    msg.from_user.id = user_id
-    msg.from_user.username = "tester"
-    msg.answer = AsyncMock()
-    return msg
-
-
-def fake_call(data: str, user_id: int):
-    call = MagicMock()
-    call.data = data
-    call.from_user.id = user_id
-    call.from_user.username = "admin"
-    call.answer = AsyncMock()
-    call.message.answer = AsyncMock()
-    call.bot = MagicMock()
-    call.bot.send_message = AsyncMock()
-    return call
-
 
 async def seed_subscription(tg_id: int, period_end: dt.datetime, disabled: bool = False) -> None:
     async with get_session() as session:
         session.add(User(tg_id=tg_id, username="petya"))
+        await session.flush()
         session.add(
             Subscription(
                 user_tg_id=tg_id,
@@ -61,93 +44,106 @@ async def seed_subscription(tg_id: int, period_end: dt.datetime, disabled: bool 
 
 async def main():
     await reset_db()
-    if not settings.ADMIN_IDS:
-        settings.ADMIN_IDS = "123456789"
-    admin_id = settings.admin_ids[0]
+    admin_id = 123456789
     now = dt.datetime.now(dt.timezone.utc)
 
-    # --- 1. Сервисный слой: admin_extend_subscription продлевает и пересинхронизирует ---
-    await seed_subscription(1001, now + dt.timedelta(days=5))
-    xui_client.renew_client = AsyncMock(return_value=(1, "sub-1"))
+    with patch.object(settings, "BOT_TOKEN", "test_bot_token_123"), \
+         patch.object(settings, "ADMIN_IDS", str(admin_id)):
 
-    sub = await admin_extend_subscription(1001, 10)
-    assert sub is not None
-    assert abs((sub.period_end - (now + dt.timedelta(days=15))).total_seconds()) < 5
-    xui_client.renew_client.assert_awaited_once()
-    print("OK: admin_extend_subscription продлевает от текущего period_end и вызывает renew_client")
+        # --- 1. Сервисный слой: admin_extend_subscription продлевает и пересинхронизирует ---
+        await seed_subscription(1001, now + dt.timedelta(days=5))
+        mock_renew = AsyncMock(return_value=(1, "sub-1"))
+        mock_enabled = AsyncMock(return_value=None)
 
-    # days=0 - просто пересинхронизация, период не должен измениться
-    xui_client.renew_client.reset_mock()
-    period_before = sub.period_end
-    sub2 = await admin_extend_subscription(1001, 0)
-    assert sub2.period_end == period_before
-    xui_client.renew_client.assert_awaited_once()
-    print("OK: admin_extend_subscription(days=0) пересинхронизирует инбаунды, не трогая срок")
+        with patch.object(xui_client, "renew_client", mock_renew), \
+             patch.object(xui_client, "set_client_enabled", mock_enabled):
 
-    # несуществующий пользователь -> None, без исключений
-    result = await admin_extend_subscription(999999, 10)
-    assert result is None
-    print("OK: admin_extend_subscription для несуществующего пользователя возвращает None")
+            sub = await admin_extend_subscription(1001, 10)
+            assert sub is not None
+            assert abs((sub.period_end - (now + dt.timedelta(days=15))).total_seconds()) < 5
+            mock_renew.assert_awaited_once()
+            print("OK: admin_extend_subscription продлевает от текущего period_end и вызывает renew_client")
 
-    # --- 2. Сервисный слой: admin_toggle_subscription ---
-    xui_client.set_client_enabled = AsyncMock(return_value=None)
-    new_disabled = await admin_toggle_subscription(1001)
-    assert new_disabled is True
-    xui_client.set_client_enabled.assert_awaited_once_with(1001, enabled=False)
+            # days=0 - просто пересинхронизация, период не должен измениться
+            mock_renew.reset_mock()
+            period_before = sub.period_end
+            sub2 = await admin_extend_subscription(1001, 0)
+            assert sub2.period_end == period_before
+            mock_renew.assert_awaited_once()
+            print("OK: admin_extend_subscription(days=0) пересинхронизирует инбаунды, не трогая срок")
 
-    new_disabled_2 = await admin_toggle_subscription(1001)
-    assert new_disabled_2 is False
-    print("OK: admin_toggle_subscription переключает disabled и синхронизирует enable в панели")
+            # несуществующий пользователь -> автоматически создаётся подписка
+            result = await admin_extend_subscription(999999, 10)
+            assert result is not None and result.user_tg_id == 999999
+            print("OK: admin_extend_subscription для нового пользователя автоматически создаёт подписку")
 
-    # --- 3. Хендлер /admin: не-админ получает молчание (не выдаём сам факт существования команды) ---
-    msg_non_admin = fake_message("/admin 1001", user_id=222222)
-    await admin_find_user(msg_non_admin)
-    msg_non_admin.answer.assert_not_called()
-    print("OK: /admin от не-админа полностью игнорируется")
+            # --- 2. Сервисный слой: admin_toggle_subscription ---
+            new_disabled = await admin_toggle_subscription(1001)
+            assert new_disabled is True
+            mock_enabled.assert_awaited_once_with(1001, enabled=False)
 
-    # --- 4. Хендлер /admin: админ получает карточку с трафиком ---
-    xui_client.get_client_traffic = AsyncMock(return_value=(1024 ** 3, 2 * 1024 ** 3))  # 1GB up, 2GB down
-    msg_admin = fake_message("/admin 1001", user_id=admin_id)
-    await admin_find_user(msg_admin)
-    msg_admin.answer.assert_called_once()
-    card_text = msg_admin.answer.await_args.args[0]
-    assert "Тариф" in card_text and "Трафик" in card_text
-    print("OK: /admin от админа показывает карточку пользователя с трафиком")
+            new_disabled_2 = await admin_toggle_subscription(1001)
+            assert new_disabled_2 is False
+            print("OK: admin_toggle_subscription переключает disabled и синхронизирует enable в панели")
 
-    # --- 5. Хендлер admin_extend через callback ---
-    xui_client.renew_client.reset_mock()
-    call = fake_call("admin_extend:1001:30", user_id=admin_id)
-    await admin_extend(call)
-    call.answer.assert_called_once()
-    call.message.answer.assert_called_once()  # обновлённая карточка
-    call.bot.send_message.assert_awaited_once()  # уведомление самому пользователю
-    async with get_session() as session:
-        sub_check = await session.scalar(select(Subscription).where(Subscription.user_tg_id == 1001))
-        assert sub_check.period_end > now + dt.timedelta(days=40)
-    print("OK: callback admin_extend продлевает, обновляет карточку и уведомляет пользователя")
 
-    # не-админ не может дёрнуть callback напрямую
-    call_bad = fake_call("admin_extend:1001:30", user_id=222222)
-    await admin_extend(call_bad)
-    call_bad.answer.assert_called_once_with("Только для администратора", show_alert=True)
-    print("OK: callback admin_extend недоступен не-админу")
+            # --- 3. REST API: Тест авторизации админских маршрутов ---
+            app = sub_server.create_app()
+            server = TestServer(app)
+            client = TestClient(server)
+            await client.start_server()
 
-    # --- 6. Хендлер admin_toggle через callback ---
-    call_toggle = fake_call("admin_toggle:1001", user_id=admin_id)
-    await admin_toggle(call_toggle)
-    async with get_session() as session:
-        sub_check = await session.scalar(select(Subscription).where(Subscription.user_tg_id == 1001))
-        assert sub_check.disabled is True
-    print("OK: callback admin_toggle отключает клиента")
+            try:
+                token_user = create_jwt({"id": 222222, "username": "non_admin"})
+                token_admin = create_jwt({"id": admin_id, "username": "admin_user"})
 
-    # --- 7. Хендлер admin_resync через callback ---
-    call_resync = fake_call("admin_resync:1001", user_id=admin_id)
-    await admin_resync(call_resync)
-    call_resync.answer.assert_called_once()
-    print("OK: callback admin_resync выполняется без ошибок")
+                headers_user = {"Authorization": f"Bearer {token_user}"}
+                headers_admin = {"Authorization": f"Bearer {token_admin}"}
+
+                # Не-админ получает 403 Forbidden
+                resp_forbidden = await client.get("/api/v1/admin/users/search", headers=headers_user)
+                assert resp_forbidden.status == 403
+                print("OK: Админские эндпоинты возвращают 403 Forbidden для обычных пользователей")
+
+                # Админ получает результаты поиска
+                resp_ok = await client.get("/api/v1/admin/users/search?q=1001", headers=headers_admin)
+                assert resp_ok.status == 200
+                users_data = await resp_ok.json()
+                assert len(users_data.get("users", [])) == 1
+                print("OK: /api/v1/admin/users/search возвращает результаты для администратора")
+
+                # Админ получает финансовую статистику
+                resp_stats = await client.get("/api/v1/admin/stats", headers=headers_admin)
+                assert resp_stats.status == 200
+                stats = await resp_stats.json()
+                assert "total_users" in stats and "active_subs" in stats
+                print("OK: /api/v1/admin/stats отдаёт корректную сводку статистики")
+
+                # Админ продлевает подписку через REST API
+                mock_renew.reset_mock()
+                resp_extend = await client.post(
+                    "/api/v1/admin/user/1001/extend",
+                    json={"days": 30},
+                    headers=headers_admin,
+                )
+                assert resp_extend.status == 200
+                async with get_session() as session:
+                    sub_check = await session.scalar(select(Subscription).where(Subscription.user_tg_id == 1001))
+                    assert sub_check.period_end > now + dt.timedelta(days=40)
+                print("OK: REST API /api/v1/admin/user/{id}/extend успешного продления")
+
+            finally:
+                await client.close()
+
 
     print("\nАДМИН-ПАНЕЛЬ: ВСЕ ПРОВЕРКИ ПРОШЛИ")
 
 
+def test_admin_suite() -> None:
+    asyncio.run(main())
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+
+

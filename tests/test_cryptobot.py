@@ -21,10 +21,10 @@ from sqlalchemy import select
 
 import panel.xui_client as xui_client
 import sub_server
-from bot.handlers import choose_payment_method
-from db.database import get_session, reset_db
-from db.models import PaymentRecord, Subscription
+from api.auth import create_jwt
 from config import settings
+from db.database import get_session, reset_db
+from db.models import PaymentRecord, Subscription, User
 
 
 class FakeBot:
@@ -35,24 +35,18 @@ class FakeBot:
         self.sent.append((chat_id, text))
 
 
-def fake_call(data: str, user_id: int):
-    call = AsyncMock()
-    call.data = data
-    call.from_user.id = user_id
-    call.from_user.username = "crypto_user"
-    call.message.answer = AsyncMock()
-    return call
-
-
 async def main():
     await reset_db()
-    xui_client.provision_client = AsyncMock(return_value=("crypto-uuid", 1, "crypto-sub"))
     bot = FakeBot()
     sub_server.set_bot_instance(bot)
 
-    with patch.object(settings, "CRYPTO_PAY_TOKEN", "12345:AA_test_crypto_token"):
+    with patch.object(xui_client, "provision_client", new=AsyncMock(return_value=("crypto-uuid", 1, "crypto-sub"))), \
+         patch.object(settings, "BOT_TOKEN", "test_bot_token_123"), \
+         patch.object(settings, "CRYPTO_PAY_TOKEN", "12345:AA_test_crypto_token"):
+        token = create_jwt({"id": 999, "username": "crypto_user"})
 
-        # --- 1. choose_payment_method вызывает CryptoPay API ---
+        auth_headers = {"Authorization": f"Bearer {token}"}
+
         fake_api_response = {
             "ok": True,
             "result": {
@@ -64,38 +58,40 @@ async def main():
         cm = AsyncMock()
         cm.__aenter__.return_value.json = AsyncMock(return_value=fake_api_response)
 
-        with patch("aiohttp.ClientSession.post", return_value=cm):
-            call = fake_call("pay:m1:cryptobot", user_id=999)
-            await choose_payment_method(call)
-
-        call.message.answer.assert_called_once()
-        answer_kwargs = call.message.answer.call_args.kwargs
-        reply_markup = answer_kwargs.get("reply_markup")
-        assert reply_markup is not None
-        assert reply_markup.inline_keyboard[0][0].url == "https://t.me/CryptoBot?start=IV55555"
-        print("OK: choose_payment_method запрашивает чек CryptoBot и отсылает ссылку")
-
-        # --- 2. Симуляция HTTP Webhook от CryptoBot ---
-        payload_body = {
-            "update_id": 1,
-            "update_type": "invoice_paid",
-            "request_date": "2026-07-31T00:00:00Z",
-            "payload": {
-                "invoice_id": 55555,
-                "status": "paid",
-                "payload": "crypto:m1:999",
-            }
-        }
-        body_bytes = json.dumps(payload_body).encode("utf-8")
-
-        secret_key = hashlib.sha256(b"12345:AA_test_crypto_token").digest()
-        valid_signature = hmac.new(secret_key, body_bytes, hashlib.sha256).hexdigest()
-
         app = sub_server.create_app()
+        app["bot"] = bot
         server = TestServer(app)
         client = TestClient(server)
         await client.start_server()
         try:
+            # 1. POST /api/v1/purchase с method_id="cryptobot"
+            with patch("aiohttp.ClientSession.post", return_value=cm):
+                resp = await client.post(
+                    "/api/v1/purchase",
+                    json={"plan_id": "m1", "method_id": "cryptobot"},
+                    headers=auth_headers,
+                )
+                assert resp.status == 200
+                data = await resp.json()
+                assert data.get("payment_url") == "https://t.me/CryptoBot?start=IV55555"
+                print("OK: POST /api/v1/purchase запрашивает инвойс CryptoBot и возвращает payment_url")
+
+            # 2. Симуляция HTTP Webhook от CryptoBot
+            payload_body = {
+                "update_id": 1,
+                "update_type": "invoice_paid",
+                "request_date": "2026-07-31T00:00:00Z",
+                "payload": {
+                    "invoice_id": 55555,
+                    "status": "paid",
+                    "payload": "crypto:m1:999",
+                }
+            }
+            body_bytes = json.dumps(payload_body).encode("utf-8")
+
+            secret_key = hashlib.sha256(b"12345:AA_test_crypto_token").digest()
+            valid_signature = hmac.new(secret_key, body_bytes, hashlib.sha256).hexdigest()
+
             # 2a. Невалидная подпись -> 400
             resp_bad = await client.post(
                 "/webhook/cryptopay",
@@ -131,5 +127,11 @@ async def main():
     print("\nCRYPTOBOT WEBHOOK: ВСЕ ПРОВЕРКИ ПРОШЛИ")
 
 
+def test_cryptobot_suite() -> None:
+    asyncio.run(main())
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+
+

@@ -11,92 +11,116 @@ py3xui и Telegram полностью замоканы. Запуск из кор
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
+from aiohttp.test_utils import TestClient, TestServer
 from sqlalchemy import select
 
-from bot.handlers import admin_confirm, choose_plan
+import sub_server
+from api.auth import create_jwt
 from config import settings
 from db.database import get_session, reset_db
 from db.models import PaymentRecord, PendingPayment, User
 
 
-def fake_call(data: str, user_id: int, username: str = "tester"):
-    call = MagicMock()
-    call.data = data
-    call.from_user.id = user_id
-    call.from_user.username = username
-    call.answer = AsyncMock()
-    call.message.answer = AsyncMock()
-    call.message.edit_text = AsyncMock()
-    call.message.text = "заявка"
-    call.bot = MagicMock()
-    return call
+class FakeBot:
+    def __init__(self):
+        self.sent = []
+
+    async def send_message(self, chat_id, text, **kwargs):
+        self.sent.append((chat_id, text))
 
 
 async def main():
     await reset_db()
+    bot = FakeBot()
 
-    # --- 1. Сбой активации триала не должен помечать trial_used=True ---
-    call = fake_call("plan:trial", user_id=777)
+    app = sub_server.create_app()
+    app["bot"] = bot
+    server = TestServer(app)
+    client = TestClient(server)
+    await client.start_server()
 
-    with patch("bot.handlers.handle_trial_activation", new=AsyncMock(side_effect=RuntimeError("панель недоступна"))):
-        await choose_plan(call)
+    admin_id = 123456789
+    try:
+        with patch.object(settings, "BOT_TOKEN", "test_bot_token_123"), \
+             patch.object(settings, "ADMIN_IDS", str(admin_id)):
 
-    async with get_session() as session:
-        user = await session.get(User, 777)
-        assert user is not None
-        assert user.trial_used is False, "триал не должен считаться использованным при сбое активации"
-    call.message.answer.assert_called_once()
-    error_text = call.message.answer.await_args.args[0].lower()
-    assert "не получилось" in error_text or "ошибка" in error_text
-    print("OK: при сбое активации триала флаг trial_used НЕ выставляется, пользователь видит ошибку")
+            token_user = create_jwt({"id": 777, "username": "tester"})
+            headers_user = {"Authorization": f"Bearer {token_user}"}
 
-    # повторный вызов при успешной активации ДОЛЖЕН выставить флаг
-    call2 = fake_call("plan:trial", user_id=777)
-    with patch("bot.handlers.handle_trial_activation", new=AsyncMock(return_value=None)):
-        await choose_plan(call2)
+            token_admin = create_jwt({"id": admin_id, "username": "admin"})
+            headers_admin = {"Authorization": f"Bearer {token_admin}"}
 
-    async with get_session() as session:
-        user = await session.get(User, 777)
-        assert user.trial_used is True
-    print("OK: при успешной активации флаг trial_used выставляется")
+            # --- 1. Сбой активации триала не должен помечать trial_used=True ---
+            async with get_session() as session:
+                session.add(User(tg_id=777))
+                await session.commit()
 
-    # --- 2. Сбой при подтверждении админом откатывает заявку в pending ---
-    if not settings.ADMIN_IDS:
-        settings.ADMIN_IDS = "123456789"
-    admin_id = settings.admin_ids[0]
+            with patch("api.routes.handle_trial_activation", new=AsyncMock(side_effect=RuntimeError("панель недоступна"))):
+                resp = await client.post("/api/v1/trial/activate", json={}, headers=headers_user)
+                assert resp.status == 500
 
-    async with get_session() as session:
-        session.add(User(tg_id=888))
-        pending = PendingPayment(user_tg_id=888, plan_id="m1", method_id="yoomoney", order_code="FAIL01")
-        session.add(pending)
-        await session.commit()
-        pending_id = pending.id
+            async with get_session() as session:
+                user = await session.get(User, 777)
+                assert user is not None
+                assert user.trial_used is False, "триал не должен считаться использованным при сбое активации"
+            print("OK: при сбое активации триала флаг trial_used НЕ выставляется, клиент получает ошибку")
 
-    call3 = fake_call(f"admin_confirm:{pending_id}", user_id=admin_id)
-    with patch("bot.handlers.handle_manual_payment_confirmed", new=AsyncMock(side_effect=RuntimeError("панель недоступна"))):
-        await admin_confirm(call3)
+            # повторный вызов при успешной активации ДОЛЖЕН выставить флаг
+            with patch("api.routes.handle_trial_activation", new=AsyncMock(return_value=None)):
+                resp2 = await client.post("/api/v1/trial/activate", json={}, headers=headers_user)
+                assert resp2.status == 200
 
-    async with get_session() as session:
-        pending = await session.get(PendingPayment, pending_id)
-        assert pending.status == "pending", "при сбое заявка должна откатиться в pending, а не зависнуть в processing/confirmed"
-        rows = (await session.scalars(select(PaymentRecord).where(PaymentRecord.external_id == f"manual:{pending.order_code}"))).all()
-        assert len(rows) == 0, "платёж не должен считаться проведённым при сбое провижининга"
-    print("OK: сбой провижининга откатывает заявку в pending, платёж не засчитывается")
+            async with get_session() as session:
+                user = await session.get(User, 777)
+                assert user.trial_used is True
+            print("OK: при успешной активации флаг trial_used выставляется")
 
-    # повторное подтверждение той же заявки при успехе должно пройти нормально
-    call4 = fake_call(f"admin_confirm:{pending_id}", user_id=admin_id)
-    with patch("bot.handlers.handle_manual_payment_confirmed", new=AsyncMock(return_value=None)):
-        await admin_confirm(call4)
 
-    async with get_session() as session:
-        pending = await session.get(PendingPayment, pending_id)
-        assert pending.status == "confirmed"
-    print("OK: повторное подтверждение после устранения сбоя проходит успешно")
+            # --- 2. Сбой при подтверждении админом откатывает заявку в pending ---
+            async with get_session() as session:
+                session.add(User(tg_id=888))
+                await session.flush()
+                pending = PendingPayment(user_tg_id=888, plan_id="m1", method_id="ozon", order_code="FAIL01")
+                session.add(pending)
+                await session.commit()
+                pending_id = pending.id
+
+            with patch("services.provisioning.handle_manual_payment_confirmed", new=AsyncMock(side_effect=RuntimeError("панель недоступна"))):
+                resp3 = await client.post(f"/api/v1/admin/pending-payments/{pending_id}/resolve", json={"action": "confirm"}, headers=headers_admin)
+                assert resp3.status == 500
+
+            async with get_session() as session:
+                pending = await session.get(PendingPayment, pending_id)
+                assert pending.status == "pending", "при сбое заявка должна откатиться в pending"
+                rows = (await session.scalars(select(PaymentRecord).where(PaymentRecord.external_id == f"manual:{pending.order_code}"))).all()
+                assert len(rows) == 0, "платёж не должен считаться проведённым при сбое провижининга"
+            print("OK: сбой провижининга откатывает заявку в pending, платёж не засчитывается")
+
+            # повторное подтверждение той же заявки при успехе должно пройти нормально
+            with patch("services.provisioning.handle_manual_payment_confirmed", new=AsyncMock(return_value=None)):
+                resp4 = await client.post(f"/api/v1/admin/pending-payments/{pending_id}/resolve", json={"action": "confirm"}, headers=headers_admin)
+                assert resp4.status == 200
+
+
+
+            async with get_session() as session:
+                pending = await session.get(PendingPayment, pending_id)
+                assert pending.status == "confirmed"
+            print("OK: повторное подтверждение после устранения сбоя проходит успешно")
+
+    finally:
+        await client.close()
 
     print("\nОБРАБОТКА ОШИБОК: ВСЕ ПРОВЕРКИ ПРОШЛИ")
 
 
+def test_error_handling_suite() -> None:
+    asyncio.run(main())
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+
+

@@ -1,0 +1,15 @@
+[Unit]
+Description=VeiloraVPN Telegram Bot & Mini App Server
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/vpn_bot
+ExecStart=/usr/bin/python3 main.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

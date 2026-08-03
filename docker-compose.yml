@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  vpn-bot:
+    build: .
+    container_name: veilora_vpn_bot
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./bot.db:/app/bot.db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
