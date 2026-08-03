@@ -249,7 +249,7 @@ export function HomePage({ navigate }: HomePageProps) {
 
           {/* Visual Subscription Progress Bar */}
           {(() => {
-            const totalDays = sub.days_left > 30 ? 90 : 30;
+            const totalDays = sub.total_days || (sub.days_left > 30 ? 90 : 30);
             const percent = Math.min(100, Math.max(0, Math.round((sub.days_left / totalDays) * 100)));
             const progressColor = sub.days_left <= 3 ? '#ef4444' : sub.days_left <= 7 ? '#f59e0b' : '#10b981';
             return (

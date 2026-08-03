@@ -43,6 +43,7 @@ export interface SubscriptionInfo {
   disabled: boolean;
   period_end: string;
   days_left: number;
+  total_days?: number;
   sub_link: string | null;
   public_token: string;
   traffic?: TrafficInfo;

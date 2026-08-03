@@ -14,8 +14,10 @@ import {
   adminGetPromos,
   adminCreatePromo,
   adminDeletePromo,
+  adminGetStats,
+  adminBroadcast,
 } from '../api/client';
-import type { AdminPromoCode } from '../api/client';
+import type { AdminPromoCode, AdminStats } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import type {
@@ -41,6 +43,8 @@ import {
   Ticket,
   Percent,
   Loader2,
+  Megaphone,
+  Send,
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -52,7 +56,14 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
   const { haptic, showBackButton, hideBackButton } = useTelegram();
   const { showToast } = useToast();
 
-  const [tab, setTab] = useState<'users' | 'payments' | 'promos'>('users');
+  const [tab, setTab] = useState<'users' | 'payments' | 'promos' | 'broadcast'>('users');
+
+  // Stats Dashboard state
+  const [stats, setStats] = useState<AdminStats | null>(null);
+
+  // Broadcast tab state
+  const [broadcastMsg, setBroadcastMsg] = useState('');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
   // Users tab state
   const [searchQuery, setSearchQuery] = useState('');
@@ -254,6 +265,40 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
     }
   };
 
+  // Load stats
+  const loadStats = useCallback(async () => {
+    try {
+      const data = await adminGetStats();
+      setStats(data);
+    } catch {
+      /* handled */
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Send broadcast
+  const handleSendBroadcast = async () => {
+    if (!broadcastMsg.trim()) {
+      showToast('Введите текст сообщения для рассылки', 'error');
+      return;
+    }
+    if (!window.confirm(`Отправить сообщение всем зарегистрированным пользователям?`)) return;
+    haptic('heavy');
+    setSendingBroadcast(true);
+    try {
+      const res = await adminBroadcast(broadcastMsg.trim());
+      showToast(`Рассылка завершена! Отправлено: ${res.sent_count} из ${res.total}`, 'success');
+      setBroadcastMsg('');
+    } catch (err: any) {
+      showToast(err.message || 'Ошибка рассылки', 'error');
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
+
   // Delete promo
   const handleDeletePromo = async (promoId: number, code: string) => {
     if (!window.confirm(`Удалить промокод ${code}?`)) return;
@@ -346,6 +391,35 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
         </div>
       </div>
 
+      {/* Stats Dashboard Grid */}
+      {!selectedUser && stats && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 16 }}>
+          <div className="card" style={{ padding: '12px 14px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--success)', textTransform: 'uppercase', marginBottom: 4 }}>
+              💰 Доход за 30 дней
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#ffffff' }}>
+              {stats.revenue_month} ₽
+            </div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', marginTop: 2 }}>
+              Сегодня: +{stats.revenue_today} ₽
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '12px 14px', background: 'rgba(255, 255, 255, 0.04)' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 4 }}>
+              👥 Пользователи
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#ffffff' }}>
+              {stats.total_users}
+            </div>
+            <div style={{ fontSize: 10.5, color: 'var(--success)', marginTop: 2 }}>
+              Активных: {stats.active_subs}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       {!selectedUser && (
         <div className="noir-pills-scroll" style={{ marginBottom: 16 }}>
@@ -383,6 +457,17 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
             <Ticket size={14} />
             <span>Промокоды</span>
             <span className="noir-pill-badge">{promos.length}</span>
+          </button>
+
+          <button
+            className={`noir-pill ${tab === 'broadcast' ? 'active' : ''}`}
+            onClick={() => {
+              haptic('light');
+              setTab('broadcast');
+            }}
+          >
+            <Megaphone size={14} />
+            <span>Рассылка</span>
           </button>
         </div>
       )}
@@ -693,7 +778,7 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
             ))
           )}
         </div>
-      ) : (
+      ) : tab === 'promos' ? (
         /* Promos Management List & Form */
         <div>
           <div className="noir-section-title">СОЗДАТЬ ПРОМОКОД</div>
@@ -839,6 +924,47 @@ export function AdminPage({ navigate, profile }: AdminPageProps) {
               ))}
             </div>
           )}
+        </div>
+      ) : (
+        /* Broadcast Tab */
+        <div>
+          <div className="noir-section-title">МАССОВАЯ РАССЫЛКА</div>
+
+          <div className="card card-accent" style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10, lineHeight: 1.45 }}>
+              Сообщение будет отправлено каждому зарегистрированному пользователю в Telegram. Поддерживается HTML форматирование (<code>&lt;b&gt;жирный&lt;/b&gt;</code>, <code>&lt;i&gt;курсив&lt;/i&gt;</code>, <code>&lt;code&gt;код&lt;/code&gt;</code>).
+            </div>
+
+            <textarea
+              rows={5}
+              placeholder="Введите текст объявления или новости..."
+              value={broadcastMsg}
+              onChange={(e) => setBroadcastMsg(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: '#000000',
+                border: '1px solid var(--glass-border)',
+                borderRadius: 'var(--radius-sm)',
+                color: '#ffffff',
+                fontSize: 13,
+                fontFamily: 'inherit',
+                outline: 'none',
+                resize: 'none',
+                marginBottom: 12,
+                boxSizing: 'border-box',
+              }}
+            />
+
+            <button
+              className="btn btn-primary btn-block"
+              disabled={sendingBroadcast || !broadcastMsg.trim()}
+              onClick={handleSendBroadcast}
+            >
+              {sendingBroadcast ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
+              <span>Отправить всем ({stats?.total_users || 0} польз.)</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

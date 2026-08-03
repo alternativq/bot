@@ -130,6 +130,7 @@ async def get_me(request: web.Request) -> web.Response:
 
     if sub and plan:
         days_left = max(0, (sub.period_end - xui_client.dt.datetime.now(xui_client.dt.timezone.utc)).days) if active else 0
+        total_days = max(plan.duration_days if plan else 30, days_left) if active else 30
         result["subscription"] = {
             "plan_id": sub.plan_id,
             "plan_title": plan.title,
@@ -139,6 +140,7 @@ async def get_me(request: web.Request) -> web.Response:
             "disabled": sub.disabled,
             "period_end": sub.period_end.isoformat(),
             "days_left": days_left,
+            "total_days": total_days,
             "sub_link": sub_link,
             "public_token": sub.public_token,
         }
@@ -411,6 +413,7 @@ async def get_subscription(request: web.Request) -> web.Response:
 
     import datetime as dt
     days_left = max(0, (sub.period_end - dt.datetime.now(dt.timezone.utc)).days) if active else 0
+    total_days = max(plan.duration_days if plan else 30, days_left) if active else 30
 
     return _json({
         "subscription": {
@@ -424,6 +427,7 @@ async def get_subscription(request: web.Request) -> web.Response:
             "disabled": sub.disabled,
             "period_end": sub.period_end.isoformat(),
             "days_left": days_left,
+            "total_days": total_days,
             "sub_link": sub_link,
             "public_token": sub.public_token,
             "traffic": {
@@ -972,3 +976,92 @@ async def admin_delete_promo(request: web.Request) -> web.Response:
         await session.commit()
 
     return _json({"status": "deleted"})
+
+
+@api_routes.get("/api/v1/admin/stats")
+async def admin_get_stats(request: web.Request) -> web.Response:
+    """Получение финансовой статистики и сводки пользователей."""
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    from db.models import PaymentRecord, Subscription, User
+    now = xui_client.dt.datetime.now(xui_client.dt.timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = now - xui_client.dt.timedelta(days=30)
+
+    async with get_session() as session:
+        total_users = len((await session.scalars(select(User))).all())
+
+        all_subs = (await session.scalars(select(Subscription))).all()
+        active_subs = 0
+        expiring_3days = 0
+
+        for s in all_subs:
+            if s.is_active() and not s.disabled:
+                active_subs += 1
+                days_rem = (s.period_end - now).days
+                if 0 <= days_rem <= 3:
+                    expiring_3days += 1
+
+        all_payments = (await session.scalars(select(PaymentRecord))).all()
+        total_revenue = sum(p.amount_rub for p in all_payments)
+        revenue_today = sum(p.amount_rub for p in all_payments if p.created_at and p.created_at >= today_start)
+        revenue_month = sum(p.amount_rub for p in all_payments if p.created_at and p.created_at >= month_start)
+
+    return _json({
+        "total_users": total_users,
+        "active_subs": active_subs,
+        "expiring_3days": expiring_3days,
+        "revenue_today": revenue_today,
+        "revenue_month": revenue_month,
+        "total_revenue": total_revenue,
+    })
+
+
+@api_routes.post("/api/v1/admin/broadcast")
+async def admin_broadcast(request: web.Request) -> web.Response:
+    """Массовая рассылка сообщений пользователям."""
+    if not _check_admin(request):
+        return _error("Forbidden", 403)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return _error("Invalid JSON")
+
+    message_text = str(body.get("message", "")).strip()
+    if not message_text:
+        return _error("Введите текст сообщения")
+
+    bot = request.app.get("bot")
+    if not bot:
+        return _error("Bot not configured")
+
+    from db.models import User
+    import asyncio
+
+    async with get_session() as session:
+        users = (await session.scalars(select(User))).all()
+
+    sent_count = 0
+    failed_count = 0
+
+    for u in users:
+        try:
+            await bot.send_message(
+                u.tg_id,
+                message_text,
+                parse_mode="HTML",
+                disable_web_page_preview=True
+            )
+            sent_count += 1
+            await asyncio.sleep(0.04)
+        except Exception:
+            failed_count += 1
+
+    return _json({
+        "status": "completed",
+        "sent_count": sent_count,
+        "failed_count": failed_count,
+        "total": len(users),
+    })

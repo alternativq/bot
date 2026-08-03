@@ -212,3 +212,28 @@ export async function adminCreatePromo(data: {
 export async function adminDeletePromo(promoId: number): Promise<{ status: string }> {
   return request(`/admin/promos/${promoId}`, { method: 'DELETE' });
 }
+
+export interface AdminStats {
+  total_users: number;
+  active_subs: number;
+  expiring_3days: number;
+  revenue_today: number;
+  revenue_month: number;
+  total_revenue: number;
+}
+
+export async function adminGetStats(): Promise<AdminStats> {
+  return request('/admin/stats');
+}
+
+export async function adminBroadcast(message: string): Promise<{
+  status: string;
+  sent_count: number;
+  failed_count: number;
+  total: number;
+}> {
+  return request('/admin/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  });
+}
