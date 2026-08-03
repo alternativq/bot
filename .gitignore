@@ -5,6 +5,9 @@ __pycache__/
 .pytest_cache/
 .env
 bot.db
+bot.db-shm
+bot.db-wal
+*.db*
 
 # Node / webapp
 node_modules/
