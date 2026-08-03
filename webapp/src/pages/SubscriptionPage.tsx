@@ -4,6 +4,7 @@ import { getSubscription, getSubscriptionQR } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import type { SubscriptionInfo } from '../types';
+import { OnboardingModal } from '../components/OnboardingModal';
 import {
   Key,
   Copy,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   ArrowLeft,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 
 interface SubscriptionPageProps {
@@ -26,6 +28,7 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
   const [showQR, setShowQR] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
   useEffect(() => {
     showBackButton(() => navigate('home'));
@@ -294,6 +297,25 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
           </button>
         </div>
       </div>
+
+      {/* Interactive Guide Trigger Banner */}
+      <button
+        className="btn btn-primary btn-block"
+        style={{ padding: '14px', fontSize: 13, marginBottom: 20 }}
+        onClick={() => {
+          haptic('medium');
+          setShowOnboardingModal(true);
+        }}
+      >
+        <Sparkles size={16} />
+        <span>Интерактивный слайдер настройки (3 шага)</span>
+      </button>
+
+      <OnboardingModal
+        isOpen={showOnboardingModal}
+        onClose={() => setShowOnboardingModal(false)}
+        subLink={sub?.sub_link}
+      />
     </div>
   );
 }

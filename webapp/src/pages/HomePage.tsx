@@ -5,6 +5,7 @@ import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import logoImg from '../assets/logo.jpg';
 import type { UserProfile } from '../types';
+import { OnboardingModal } from '../components/OnboardingModal';
 import {
   ShieldCheck,
   Copy,
@@ -16,9 +17,8 @@ import {
   Key,
   Flame,
   History,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -32,7 +32,7 @@ export function HomePage({ navigate }: HomePageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -172,49 +172,32 @@ export function HomePage({ navigate }: HomePageProps) {
       {/* 30-Second Quick Onboarding Banner */}
       <div
         className="card card-interactive"
-        style={{ marginBottom: 18, background: 'radial-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(13, 13, 16, 0.95) 100%)', border: '1px solid rgba(255, 255, 255, 0.15)' }}
+        style={{
+          marginBottom: 18,
+          background: 'radial-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(13, 13, 16, 0.96) 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.18)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+        }}
         onClick={() => {
-          haptic('light');
-          setShowGuide(!showGuide);
+          haptic('medium');
+          setShowOnboardingModal(true);
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <HelpCircle size={18} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(255, 255, 255, 0.3)' }}>
+              <Sparkles size={20} />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 850, color: '#ffffff' }}>👋 Настройка за 30 секунд</div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Пошаговый визуальный гайд по подключению</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 14, fontWeight: 900, color: '#ffffff' }}>👋 Настройка за 30 секунд</span>
+                <span className="noir-badge" style={{ background: 'var(--success)', color: '#ffffff', fontSize: 9 }}>ИНТЕРАКТИВ</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Пошаговый слайдер: Happ / v2raytun</div>
             </div>
           </div>
-          {showGuide ? <ChevronUp size={18} style={{ color: 'var(--text-secondary)' }} /> : <ChevronDown size={18} style={{ color: 'var(--text-secondary)' }} />}
+          <ChevronRight size={18} style={{ color: '#ffffff' }} />
         </div>
-
-        {showGuide && (
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span className="noir-badge" style={{ background: '#ffffff', color: '#000000', fontWeight: 900 }}>1</span>
-              <div style={{ fontSize: 12.5, color: '#ffffff', lineHeight: 1.4 }}>
-                Установите <strong>Happ</strong> или <strong>v2raytun</strong> из маркета приложений.
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span className="noir-badge" style={{ background: '#ffffff', color: '#000000', fontWeight: 900 }}>2</span>
-              <div style={{ fontSize: 12.5, color: '#ffffff', lineHeight: 1.4 }}>
-                Скопируйте ваш секретный ключ подписки нажатием на <strong>«Копировать»</strong> ниже.
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span className="noir-badge" style={{ background: '#ffffff', color: '#000000', fontWeight: 900 }}>3</span>
-              <div style={{ fontSize: 12.5, color: '#ffffff', lineHeight: 1.4 }}>
-                Откройте приложение, нажмите <strong>«+» → Вставить из буфера</strong> и включите VPN!
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Subscription Active Banner */}
@@ -459,6 +442,13 @@ export function HomePage({ navigate }: HomePageProps) {
           </div>
         </div>
       </div>
+
+      {/* Full-Screen Interactive Onboarding Modal Wizard */}
+      <OnboardingModal
+        isOpen={showOnboardingModal}
+        onClose={() => setShowOnboardingModal(false)}
+        subLink={sub?.sub_link}
+      />
     </div>
   );
 }

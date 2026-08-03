@@ -828,3 +828,90 @@ body {
   line-height: 1.55;
   background: rgba(0, 0, 0, 0.25);
 }
+
+/* ══════════════════════════════════════════
+   Modal & Slide Animations
+   ══════════════════════════════════════════ */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ══════════════════════════════════════════
+   Responsive Mobile Optimization (<420px & <380px)
+   ══════════════════════════════════════════ */
+@media (max-width: 420px) {
+  .page {
+    padding: calc(10px + var(--safe-top)) 10px calc(var(--nav-height) + var(--safe-bottom) + 20px);
+  }
+
+  .card {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+
+  .info-row {
+    font-size: 12.5px;
+    padding: 6px 0;
+  }
+
+  .copy-field {
+    padding: 8px 10px;
+  }
+
+  .copy-field code {
+    font-size: 11.5px;
+  }
+
+  .noir-header-title {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 380px) {
+  .pulse-ring-outer {
+    width: 105px;
+    height: 105px;
+  }
+
+  .pulse-ring-inner {
+    width: 82px;
+    height: 82px;
+  }
+
+  .pulse-ring-text-main {
+    font-size: 15px;
+  }
+
+  .pulse-ring-status-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+  }
+
+  .btn {
+    font-size: 12.5px;
+    padding: 10px 12px;
+  }
+
+  .info-row .label,
+  .info-row .value {
+    font-size: 12px;
+  }
+}
