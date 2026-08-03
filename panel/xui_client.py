@@ -382,41 +382,59 @@ def _parse_userinfo_header(value: str) -> SubUserInfo:
     return SubUserInfo(upload=_int("upload"), download=_int("download"), total=_int("total"), expire=_int("expire"))
 
 
-async def fetch_native_configs(sub_id: str) -> tuple[list[str], SubUserInfo]:
+async def fetch_native_configs(sub_id: str, session: aiohttp.ClientSession | None = None) -> tuple[list[str], SubUserInfo]:
     """Забирает конфиг с нативного /sub/{sub_id} панели."""
     import base64
-
     import aiohttp
 
     url = build_subscription_url(sub_id)
-    connector = aiohttp.TCPConnector(ssl=settings.SUB_FETCH_VERIFY_TLS)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+
+    async def _fetch(sess: aiohttp.ClientSession) -> tuple[list[str], SubUserInfo]:
+        async with sess.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
             resp.raise_for_status()
             raw = (await resp.text()).strip()
             userinfo_header = resp.headers.get("Subscription-Userinfo", "")
 
-    userinfo = _parse_userinfo_header(userinfo_header) if userinfo_header else SubUserInfo()
+        userinfo = _parse_userinfo_header(userinfo_header) if userinfo_header else SubUserInfo()
+        if not raw:
+            return [], userinfo
+        padded = raw + "=" * (-len(raw) % 4)
+        decoded = base64.b64decode(padded).decode("utf-8", errors="ignore")
+        lines = [line for line in decoded.splitlines() if line.strip()]
+        return lines, userinfo
 
-    if not raw:
-        return [], userinfo
-    padded = raw + "=" * (-len(raw) % 4)
-    decoded = base64.b64decode(padded).decode("utf-8", errors="ignore")
-    lines = [line for line in decoded.splitlines() if line.strip()]
-    return lines, userinfo
+    if session is not None:
+        return await _fetch(session)
+
+    connector = aiohttp.TCPConnector(ssl=settings.SUB_FETCH_VERIFY_TLS)
+    async with aiohttp.ClientSession(connector=connector) as own_session:
+        return await _fetch(own_session)
 
 
 async def build_unified_subscription_content(sub_ids: dict[int, str]) -> tuple[str, SubUserInfo]:
-    """Склеивает конфиги в одну подписку (для sub_server.py, если включён)."""
+    """Склеивает конфиги в одну подписку параллельно (для sub_server.py, если включён)."""
     import base64
+    import aiohttp
+
+    if not sub_ids:
+        return "", SubUserInfo()
+
+    connector = aiohttp.TCPConnector(ssl=settings.SUB_FETCH_VERIFY_TLS)
+    async with aiohttp.ClientSession(connector=connector) as session:
+        tasks = [fetch_native_configs(sub_id, session=session) for sub_id in sub_ids.values()]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
     all_lines: list[str] = []
     total_upload = 0
     total_download = 0
     max_total = 0
     max_expire = 0
-    for sub_id in sub_ids.values():
-        lines, info = await fetch_native_configs(sub_id)
+
+    for res in results:
+        if isinstance(res, Exception):
+            log.warning("Ошибка получения нативного конфига: %s", res)
+            continue
+        lines, info = res
         all_lines.extend(lines)
         total_upload += info.upload
         total_download += info.download

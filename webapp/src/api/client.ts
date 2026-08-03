@@ -68,16 +68,33 @@ export async function getMe(): Promise<UserProfile> {
   return request('/me');
 }
 
+/* ── Cache for static metadata ── */
+let plansCache: { data: { plans: Plan[]; trial_available: boolean }; timestamp: number } | null = null;
+let methodsCache: { data: { methods: PaymentMethod[] }; timestamp: number } | null = null;
+const CACHE_TTL_MS = 30000;
+
 /* ── Plans ── */
 
 export async function getPlans(): Promise<{ plans: Plan[]; trial_available: boolean }> {
-  return request('/plans');
+  const now = Date.now();
+  if (plansCache && now - plansCache.timestamp < CACHE_TTL_MS) {
+    return plansCache.data;
+  }
+  const data = await request<{ plans: Plan[]; trial_available: boolean }>('/plans');
+  plansCache = { data, timestamp: now };
+  return data;
 }
 
 /* ── Payment Methods ── */
 
 export async function getPaymentMethods(): Promise<{ methods: PaymentMethod[] }> {
-  return request('/payment-methods');
+  const now = Date.now();
+  if (methodsCache && now - methodsCache.timestamp < CACHE_TTL_MS) {
+    return methodsCache.data;
+  }
+  const data = await request<{ methods: PaymentMethod[] }>('/payment-methods');
+  methodsCache = { data, timestamp: now };
+  return data;
 }
 
 /* ── Purchase ── */

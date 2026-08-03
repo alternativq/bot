@@ -67,9 +67,9 @@ class Subscription(Base):
     # стабилен на весь срок жизни подписки, не меняется при продлении
     public_token: Mapped[str] = mapped_column(String(48), unique=True, index=True)
 
-    period_end: Mapped[dt.datetime] = mapped_column(UTCDateTime)
+    period_end: Mapped[dt.datetime] = mapped_column(UTCDateTime, index=True)
 
-    disabled: Mapped[bool] = mapped_column(Boolean, default=False)  # принудительно отключена вручную
+    disabled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # принудительно отключена вручную
     reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)  # напоминание об истечении уже отправлено
 
     created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)
@@ -87,13 +87,13 @@ class PendingPayment(Base):
     __tablename__ = "pending_payments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"))
+    user_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"), index=True)
     plan_id: Mapped[str] = mapped_column(String(32))
     method_id: Mapped[str] = mapped_column(String(32))
     order_code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
     promo_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     discount_percent: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending / confirmed / rejected
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending / confirmed / rejected
     created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)
     resolved_at: Mapped[dt.datetime | None] = mapped_column(UTCDateTime, nullable=True)
     resolved_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # tg_id админа
@@ -108,7 +108,7 @@ class PaymentRecord(Base):
     # "manual:<order_code>" для ручных оплат или "trial:<tg_id>" для пробного периода
     external_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     provider: Mapped[str] = mapped_column(String(16))  # manual / trial
-    user_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"))
+    user_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"), index=True)
     plan_id: Mapped[str] = mapped_column(String(32))
     amount_rub: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)
@@ -131,7 +131,7 @@ class PromoUsage(Base):
     __tablename__ = "promo_usage"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"))
+    user_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"), index=True)
     code: Mapped[str] = mapped_column(String(64), index=True)
     discount_percent: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[str] = mapped_column(String(16), default="promo")
@@ -142,7 +142,7 @@ class Referral(Base):
     __tablename__ = "referrals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    inviter_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"))
-    referred_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"))
+    inviter_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"), index=True)
+    referred_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"), index=True)
     reward_granted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)

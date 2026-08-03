@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import './App.css';
 import { BottomNav } from './components/BottomNav';
-import { FAQPage } from './pages/FAQPage';
-import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
-import { PaymentPage } from './pages/PaymentPage';
-import { PlansPage } from './pages/PlansPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { SubscriptionPage } from './pages/SubscriptionPage';
-import { AdminPage } from './pages/AdminPage';
 import { authenticate, getAuthToken, setAuthToken, getMe } from './api/client';
 import type { UserProfile } from './types';
+
+const FAQPage = lazy(() => import('./pages/FAQPage').then((m) => ({ default: m.FAQPage })));
+const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
+const PaymentPage = lazy(() => import('./pages/PaymentPage').then((m) => ({ default: m.PaymentPage })));
+const PlansPage = lazy(() => import('./pages/PlansPage').then((m) => ({ default: m.PlansPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage').then((m) => ({ default: m.SubscriptionPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 
 export type Page =
   | 'home'
@@ -132,7 +133,16 @@ export default function App() {
 
   return (
     <>
-      {renderPage()}
+      <Suspense
+        fallback={
+          <div className="page" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top, 0px))' }}>
+            <div className="skeleton" style={{ height: 160, borderRadius: 20, marginBottom: 16 }} />
+            <div className="skeleton" style={{ height: 200, borderRadius: 20 }} />
+          </div>
+        }
+      >
+        {renderPage()}
+      </Suspense>
       <BottomNav current={page} navigate={navigate} isAdmin={profile?.is_admin} />
     </>
   );
