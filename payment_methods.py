@@ -28,7 +28,7 @@ def get_payment_methods() -> list[PaymentMethod]:
         methods.append(
             PaymentMethod(
                 id="yoomoney_auto",
-                title="💳 SberPay (без комис.) / Карта РФ (~50 руб комис. банка)",
+                title="💳 SberPay (без комис.) / Любая Карта РФ (комис. зависит от банка)",
                 requisite_label="Автоматическая выдача ключа 24/7",
                 requisite="Оплата SberPay / картой любого банка РФ 24/7",
             )

@@ -20,6 +20,7 @@ import asyncio
 import datetime as dt
 import logging
 import uuid
+import aiohttp
 from dataclasses import dataclass
 
 import pyotp
@@ -389,7 +390,6 @@ def _parse_userinfo_header(value: str) -> SubUserInfo:
 async def fetch_native_configs(sub_id: str, session: aiohttp.ClientSession | None = None) -> tuple[list[str], SubUserInfo]:
     """Забирает конфиг с нативного /sub/{sub_id} панели."""
     import base64
-    import aiohttp
 
     url = build_subscription_url(sub_id)
 

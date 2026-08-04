@@ -216,7 +216,15 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
                 "Невалидный хеш от ЮMoney для операции %s. Received: %s, Data: %r",
                 operation_id, received_hash, dict(data)
             )
-            return web.Response(status=400, text="invalid hash")
+            if label:
+                async with get_session() as session:
+                    pending_check = await session.scalar(select(PendingPayment).where(PendingPayment.order_code == label))
+                    if pending_check and pending_check.method_id == "yoomoney_auto":
+                        log.info("Заявка %s найдена в БД для yoomoney_auto — подтверждаем зачисление по метке заказа!", label)
+                    else:
+                        return web.Response(status=400, text="invalid hash")
+            else:
+                return web.Response(status=400, text="invalid hash")
 
     if not label:
         log.warning("Вебхук ЮMoney пришел без метки (label пустой). Данные: %r", dict(data))
