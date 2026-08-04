@@ -245,7 +245,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
       {/* Noir Section Title */}
       <div className="noir-section-title">ТАРИФЫ ({groups[activeDuration].length})</div>
 
-      {/* 2-Column Catalog Cards Grid matching NOIR MARKET screenshot */}
+      {/* 2-Column Catalog Cards Grid matching screenshot */}
       <div className="noir-grid">
         {groups[activeDuration].map((plan) => {
           const isHit = plan.duration_days > 90;

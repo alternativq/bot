@@ -37,7 +37,7 @@ PLANS: dict[str, Plan] = {
     "m1": Plan(
         id="m1",
         title="1 месяц",
-        price_rub=149,
+        price_rub=19,
         duration_days=30,
         limit_ip=1,
     ),
