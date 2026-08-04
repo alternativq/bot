@@ -669,7 +669,12 @@ async def admin_get_user(request: web.Request) -> web.Response:
     try:
         raw_inbounds = await xui_client.get_all_inbounds()
         inbounds = [
-            {"id": ib.id, "remark": ib.remark, "port": ib.port, "protocol": ib.protocol}
+            {
+                "id": ib.id,
+                "remark": ib.remark,
+                "port": getattr(ib, "port", None),
+                "protocol": getattr(ib, "protocol", None),
+            }
             for ib in raw_inbounds
         ]
     except Exception:
