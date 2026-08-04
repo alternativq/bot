@@ -20,6 +20,7 @@ import base64
 import hashlib
 import hmac
 import logging
+import urllib.parse
 from typing import TYPE_CHECKING
 
 from aiohttp import web
@@ -196,30 +197,24 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
     if settings.YOOMONEY_SECRET:
         secret = settings.YOOMONEY_SECRET
 
-        # 1. Стандартная проверка SHA-1 (передаются codepro или codeproto)
+        # 1. Официальная проверка HMAC-SHA256 (ЮMoney 2026):
+        # Исключаем подпись, сортируем ключи по алфавиту, кодируем значения по RFC3986
+        clean_params = {k: v for k, v in data.items() if k not in ("sign", "sha1_hash")}
+        param_str = "&".join([f"{k}={urllib.parse.quote(str(clean_params[k]))}" for k in sorted(clean_params.keys())])
+        yoomoney_hmac = hmac.new(secret.encode("utf-8"), param_str.encode("utf-8"), hashlib.sha256).hexdigest().lower()
+
+        # 2. Старая проверка SHA-1 (legacy)
         check_str1 = f"{notification_type}&{operation_id}&{amount}&{currency}&{datetime_val}&{sender}&{codepro}&{secret}&{label}"
         sha1_hash1 = hashlib.sha1(check_str1.encode("utf-8")).hexdigest().lower()
 
-        # 2. SHA-256 по той же строке
-        sha256_hash1 = hashlib.sha256(check_str1.encode("utf-8")).hexdigest().lower()
-
-        # 3. HMAC-SHA256 по отсортированным параметрам
-        clean_params = {k: v for k, v in data.items() if k not in ("sign", "sha1_hash")}
-        sorted_str = "&".join([f"{k}={v}" for k, v in sorted(clean_params.items())])
-        hmac_hash = hmac.new(secret.encode("utf-8"), sorted_str.encode("utf-8"), hashlib.sha256).hexdigest().lower()
-
-        # 4. SHA-1 без codepro
-        check_str2 = f"{notification_type}&{operation_id}&{amount}&{currency}&{datetime_val}&{sender}&&{secret}&{label}"
-        sha1_hash2 = hashlib.sha1(check_str2.encode("utf-8")).hexdigest().lower()
-
-        valid_hashes = {sha1_hash1, sha256_hash1, hmac_hash, sha1_hash2}
+        valid_hashes = {yoomoney_hmac, sha1_hash1}
 
         # Если это тестовое уведомление или один из хешей совпал — пропускаем
         is_test = str(data.get("test_notification", "")).lower() == "true"
         if not is_test and (received_hash not in valid_hashes):
             log.warning(
-                "Невалидный хеш от ЮMoney для операции %s. Received: %s, Expected SHA1: %s, Data: %r",
-                operation_id, received_hash, sha1_hash1, dict(data)
+                "Невалидный хеш от ЮMoney для операции %s. Received: %s, Data: %r",
+                operation_id, received_hash, dict(data)
             )
             return web.Response(status=400, text="invalid hash")
 
