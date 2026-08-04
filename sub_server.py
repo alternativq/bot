@@ -224,19 +224,24 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
             return web.Response(status=400, text="invalid hash")
 
     if not label:
+        log.warning("Вебхук ЮMoney пришел без метки (label пустой). Данные: %r", dict(data))
         return web.Response(text="OK")
+
+    log.info("Обработка вебхука ЮMoney для метки %s...", label)
 
     async with get_session() as session:
         pending = await session.scalar(select(PendingPayment).where(PendingPayment.order_code == label))
         if pending is None:
-            log.warning("Заявка ЮMoney с кодом %s не найдена", label)
+            log.warning("Заявка ЮMoney с кодом %s не найдена в БД", label)
             return web.Response(text="OK")
 
         if pending.status == "confirmed":
+            log.info("Заявка ЮMoney с кодом %s уже имеет статус confirmed", label)
             return web.Response(text="OK")
 
     from services.provisioning import handle_manual_payment_confirmed
     try:
+        log.info("Начинаем выдачу подписки для заявки ЮMoney %s (user_tg_id=%s)...", pending.id, pending.user_tg_id)
         await handle_manual_payment_confirmed(pending, _bot_instance)
         async with get_session() as session:
             p = await session.get(PendingPayment, pending.id)
@@ -244,6 +249,7 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
                 p.status = "confirmed"
                 p.resolved_at = xui_client.dt.datetime.now(xui_client.dt.timezone.utc)
                 await session.commit()
+        log.info("Подписка для заявки ЮMoney %s успешно выдана!", label)
     except Exception:
         log.exception("Ошибка обработки ЮMoney платежа %s", label)
 
