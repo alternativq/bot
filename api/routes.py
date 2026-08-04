@@ -284,6 +284,7 @@ async def create_purchase(request: web.Request) -> web.Response:
             method_id=method.id,
             order_code=order_code,
             discount_percent=discount_percent,
+            status="created",
         )
         session.add(pending)
         await session.commit()
@@ -351,8 +352,11 @@ async def mark_paid(request: web.Request) -> web.Response:
         pending = await session.get(PendingPayment, pending_id)
         if pending is None or pending.user_tg_id != tg_id:
             return _error("Payment not found", 404)
-        if pending.status != "pending":
+        if pending.status not in ("created", "pending"):
             return _error(f"Payment already {pending.status}")
+        if pending.status == "created":
+            pending.status = "pending"
+            await session.commit()
 
     # Уведомляем администраторов через бота
     bot = request.app.get("bot")
@@ -765,7 +769,10 @@ async def admin_pending_payments(request: web.Request) -> web.Response:
     async with get_session() as session:
         pendings = await session.scalars(
             select(PendingPayment)
-            .where(PendingPayment.status == "pending")
+            .where(
+                PendingPayment.status == "pending",
+                PendingPayment.method_id.notin_(["yoomoney_auto", "cryptobot"])
+            )
             .order_by(PendingPayment.created_at.desc())
         )
         result = []

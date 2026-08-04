@@ -93,7 +93,7 @@ class PendingPayment(Base):
     order_code: Mapped[str] = mapped_column(String(16), unique=True, index=True)
     promo_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     discount_percent: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)  # pending / confirmed / rejected
+    status: Mapped[str] = mapped_column(String(16), default="created", index=True)  # created / pending / confirmed / rejected
     created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)
     resolved_at: Mapped[dt.datetime | None] = mapped_column(UTCDateTime, nullable=True)
     resolved_by: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # tg_id админа
