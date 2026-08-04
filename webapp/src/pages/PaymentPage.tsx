@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Page } from '../App';
-import { createPurchase, markPaid } from '../api/client';
+import { createPurchase, markPaid, getSubscription } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import type { PurchaseResult } from '../types';
@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   ExternalLink,
   Loader2,
+  Zap,
+  RefreshCw,
 } from 'lucide-react';
 
 interface PaymentPageProps {
@@ -29,6 +31,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
   const [notified, setNotified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedReq, setCopiedReq] = useState(false);
+  const [checkingAuto, setCheckingAuto] = useState(false);
 
   useEffect(() => {
     showBackButton(() => navigate('plans'));
@@ -55,6 +58,32 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
     }
     init();
   }, [planId, methodId, navigate, showToast]);
+
+  const checkAutoActivation = useCallback(async () => {
+    setCheckingAuto(true);
+    try {
+      const subRes = await getSubscription();
+      if (subRes.subscription && subRes.subscription.active) {
+        haptic('heavy');
+        showToast('🎉 Оплата получена! Подписка активирована.', 'success');
+        navigate('subscription');
+        return true;
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setCheckingAuto(false);
+    }
+    return false;
+  }, [haptic, navigate, showToast]);
+
+  useEffect(() => {
+    if (!result?.payment_url) return;
+    const interval = setInterval(() => {
+      checkAutoActivation();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [result?.payment_url, checkAutoActivation]);
 
   const handleOpenPayment = useCallback(() => {
     if (!result?.payment_url) return;
@@ -194,52 +223,75 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
         )}
       </div>
 
-      {result.payment_url && (
-        <button
-          className="btn btn-primary btn-block"
-          style={{ marginBottom: 14 }}
-          onClick={handleOpenPayment}
-        >
-          <ExternalLink size={16} />
-          Перейти к оплате ({result.amount_rub} ₽)
-        </button>
-      )}
+      {result.payment_url ? (
+        <div>
+          <div className="card" style={{ padding: 14, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 850, color: 'var(--success)', marginBottom: 6 }}>
+              <Zap size={16} /> АВТОМАТИЧЕСКАЯ ВЫДАЧА КЛЮЧА 24/7
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              После успешной оплаты система автоматически зачислит платеж и активирует ваш ключ подписки за 3-5 секунд без ожидания подтверждения администратора.
+            </div>
+          </div>
 
-      {result.requisite && !result.payment_url && (
-        <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 8 }}>
-            {result.requisite_label || 'Реквизиты перевода'}
-          </div>
-          <div className="copy-field" style={{ margin: 0 }}>
-            <code>{result.requisite}</code>
-            <button
-              className={`copy-btn ${copiedReq ? 'copied' : ''}`}
-              onClick={copyRequisite}
-            >
-              {copiedReq ? <Check size={14} /> : <Copy size={14} />}
-              {copiedReq ? '✓' : 'Копия'}
-            </button>
-          </div>
+          <button
+            className="btn btn-primary btn-block"
+            style={{ marginBottom: 12 }}
+            onClick={handleOpenPayment}
+          >
+            <ExternalLink size={16} />
+            Оплатить через SberPay / Карту ({result.amount_rub} ₽)
+          </button>
+
+          <button
+            className="btn btn-secondary btn-block"
+            onClick={checkAutoActivation}
+            disabled={checkingAuto}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            <RefreshCw size={16} style={checkingAuto ? { animation: 'spin 1s linear infinite' } : {}} />
+            <span>{checkingAuto ? 'Проверка...' : 'Проверить статус зачисления'}</span>
+          </button>
         </div>
-      )}
-
-      {result.pending_id && (
-        <button
-          className="btn btn-secondary btn-block"
-          onClick={handleMarkPaid}
-          disabled={notifying}
-        >
-          {notifying ? (
-            <>
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-              Отправка...
-            </>
-          ) : (
-            <>
-              <CheckCircle2 size={16} />Я оплатил
-            </>
+      ) : (
+        <div>
+          {result.requisite && (
+            <div className="card" style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 8 }}>
+                {result.requisite_label || 'Реквизиты перевода'}
+              </div>
+              <div className="copy-field" style={{ margin: 0 }}>
+                <code>{result.requisite}</code>
+                <button
+                  className={`copy-btn ${copiedReq ? 'copied' : ''}`}
+                  onClick={copyRequisite}
+                >
+                  {copiedReq ? <Check size={14} /> : <Copy size={14} />}
+                  {copiedReq ? '✓' : 'Копия'}
+                </button>
+              </div>
+            </div>
           )}
-        </button>
+
+          {result.pending_id && (
+            <button
+              className="btn btn-secondary btn-block"
+              onClick={handleMarkPaid}
+              disabled={notifying}
+            >
+              {notifying ? (
+                <>
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                  Отправка...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} />Я оплатил
+                </>
+              )}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

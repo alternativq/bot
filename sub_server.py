@@ -213,16 +213,16 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
             return web.Response(text="OK")
 
     from services.provisioning import handle_manual_payment_confirmed
-    if _bot_instance is not None:
-        try:
-            await handle_manual_payment_confirmed(pending, _bot_instance)
-            async with get_session() as session:
-                p = await session.get(PendingPayment, pending.id)
-                if p:
-                    p.status = "confirmed"
-                    await session.commit()
-        except Exception:
-            log.exception("Ошибка обработки ЮMoney платежа %s", label)
+    try:
+        await handle_manual_payment_confirmed(pending, _bot_instance)
+        async with get_session() as session:
+            p = await session.get(PendingPayment, pending.id)
+            if p:
+                p.status = "confirmed"
+                p.resolved_at = xui_client.dt.datetime.now(xui_client.dt.timezone.utc)
+                await session.commit()
+    except Exception:
+        log.exception("Ошибка обработки ЮMoney платежа %s", label)
 
     return web.Response(text="OK")
 

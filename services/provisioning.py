@@ -112,14 +112,15 @@ async def _finalize_purchase(
             inviter_tg_id = ref_entry.inviter_tg_id
             if inviter_tg_id != tg_id:
                 await grant_referral_bonus(inviter_tg_id, tg_id)
-                try:
-                    await bot.send_message(
-                        inviter_tg_id,
-                        f"🎉 По вашей реферальной ссылке оформил подписку пользователь {tg_id}. "
-                        "К вашей подписке добавлено 5 дней бонуса."
-                    )
-                except Exception:
-                    log.exception("Не удалось уведомить реферала %s о покупке %s", inviter_tg_id, tg_id)
+                if bot:
+                    try:
+                        await bot.send_message(
+                            inviter_tg_id,
+                            f"🎉 По вашей реферальной ссылке оформил подписку пользователь {tg_id}. "
+                            "К вашей подписке добавлено 5 дней бонуса."
+                        )
+                    except Exception:
+                        log.exception("Не удалось уведомить реферала %s о покупке %s", inviter_tg_id, tg_id)
 
     if settings.unified_subscription_enabled:
         unified_url = f"{settings.PUBLIC_SUB_BASE_URL.rstrip('/')}/{public_token}"
@@ -129,10 +130,14 @@ async def _finalize_purchase(
     else:
         links = []
 
-    await bot.send_message(tg_id, texts.subscription_ready_message(plan, links, is_renewal))
+    if bot:
+        try:
+            await bot.send_message(tg_id, texts.subscription_ready_message(plan, links, is_renewal))
+        except Exception:
+            log.exception("Failed to send subscription_ready_message to %s", tg_id)
 
 
-async def handle_manual_payment_confirmed(pending: PendingPayment, bot: Bot) -> None:
+async def handle_manual_payment_confirmed(pending: PendingPayment, bot: Bot | None = None) -> None:
     """Вызывается после того, как админ нажал "Подтвердить" по заявке на ручную оплату."""
     plan = get_plan(pending.plan_id)
     if plan is None:
