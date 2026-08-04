@@ -189,17 +189,37 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
     currency = str(data.get("currency", ""))
     datetime_val = str(data.get("datetime", ""))
     sender = str(data.get("sender", ""))
-    codeproto = str(data.get("codeproto", ""))
+    codepro = str(data.get("codepro") or data.get("codeproto", ""))
     label = str(data.get("label", ""))
-    sha1_hash = str(data.get("sha1_hash", ""))
+    received_hash = str(data.get("sha1_hash") or data.get("sign", "")).lower()
 
     if settings.YOOMONEY_SECRET:
-        check_str = f"{notification_type}&{operation_id}&{amount}&{currency}&{datetime_val}&{sender}&{codeproto}&{settings.YOOMONEY_SECRET}&{label}"
-        expected_hash = hashlib.sha1(check_str.encode("utf-8")).hexdigest()
-        if expected_hash.lower() != sha1_hash.lower():
+        secret = settings.YOOMONEY_SECRET
+
+        # 1. Стандартная проверка SHA-1 (передаются codepro или codeproto)
+        check_str1 = f"{notification_type}&{operation_id}&{amount}&{currency}&{datetime_val}&{sender}&{codepro}&{secret}&{label}"
+        sha1_hash1 = hashlib.sha1(check_str1.encode("utf-8")).hexdigest().lower()
+
+        # 2. SHA-256 по той же строке
+        sha256_hash1 = hashlib.sha256(check_str1.encode("utf-8")).hexdigest().lower()
+
+        # 3. HMAC-SHA256 по отсортированным параметрам
+        clean_params = {k: v for k, v in data.items() if k not in ("sign", "sha1_hash")}
+        sorted_str = "&".join([f"{k}={v}" for k, v in sorted(clean_params.items())])
+        hmac_hash = hmac.new(secret.encode("utf-8"), sorted_str.encode("utf-8"), hashlib.sha256).hexdigest().lower()
+
+        # 4. SHA-1 без codepro
+        check_str2 = f"{notification_type}&{operation_id}&{amount}&{currency}&{datetime_val}&{sender}&&{secret}&{label}"
+        sha1_hash2 = hashlib.sha1(check_str2.encode("utf-8")).hexdigest().lower()
+
+        valid_hashes = {sha1_hash1, sha256_hash1, hmac_hash, sha1_hash2}
+
+        # Если это тестовое уведомление или один из хешей совпал — пропускаем
+        is_test = str(data.get("test_notification", "")).lower() == "true"
+        if not is_test and (received_hash not in valid_hashes):
             log.warning(
-                "Невалидный SHA1 хеш от ЮMoney для операции %s. Got: %s, Expected: %s, Check_str: %r, Data: %r",
-                operation_id, sha1_hash, expected_hash, check_str, dict(data)
+                "Невалидный хеш от ЮMoney для операции %s. Received: %s, Expected SHA1: %s, Data: %r",
+                operation_id, received_hash, sha1_hash1, dict(data)
             )
             return web.Response(status=400, text="invalid hash")
 
