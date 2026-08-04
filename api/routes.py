@@ -765,7 +765,10 @@ async def admin_pending_payments(request: web.Request) -> web.Response:
     async with get_session() as session:
         pendings = await session.scalars(
             select(PendingPayment)
-            .where(PendingPayment.status == "pending")
+            .where(
+                PendingPayment.status == "pending",
+                PendingPayment.method_id.not_in(["yoomoney_auto", "cryptobot"])
+            )
             .order_by(PendingPayment.created_at.desc())
         )
         result = []
