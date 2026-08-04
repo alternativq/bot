@@ -379,6 +379,26 @@ async def mark_paid(request: web.Request) -> web.Response:
     return _json({"status": "notified"})
 
 
+@api_routes.get("/api/v1/purchase/{pending_id}/status")
+async def get_purchase_status(request: web.Request) -> web.Response:
+    """Проверка статуса заявки на оплату (pending / confirmed / rejected)."""
+    tg_id = request["user"]["tg_id"]
+    try:
+        pending_id = int(request.match_info["pending_id"])
+    except ValueError:
+        return _error("Invalid pending_id")
+
+    async with get_session() as session:
+        pending = await session.get(PendingPayment, pending_id)
+        if pending is None or pending.user_tg_id != tg_id:
+            return _error("Payment not found", 404)
+        return _json({
+            "pending_id": pending.id,
+            "status": pending.status,
+            "order_code": pending.order_code,
+        })
+
+
 # ──────────────────────────────────────────────────────────────
 # SUBSCRIPTION
 # ──────────────────────────────────────────────────────────────

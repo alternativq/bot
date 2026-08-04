@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Page } from '../App';
-import { createPurchase, markPaid, getSubscription } from '../api/client';
+import { createPurchase, markPaid, getPurchaseStatus } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import type { PurchaseResult } from '../types';
@@ -59,15 +59,19 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
     init();
   }, [planId, methodId, navigate, showToast]);
 
-  const checkAutoActivation = useCallback(async () => {
+  const checkAutoActivation = useCallback(async (isManual = false) => {
+    if (!result?.pending_id) return false;
     setCheckingAuto(true);
     try {
-      const subRes = await getSubscription();
-      if (subRes.subscription && subRes.subscription.active) {
+      const statusRes = await getPurchaseStatus(result.pending_id);
+      if (statusRes.status === 'confirmed') {
         haptic('heavy');
         showToast('🎉 Оплата получена! Подписка активирована.', 'success');
         navigate('subscription');
         return true;
+      }
+      if (isManual && statusRes.status === 'pending') {
+        showToast('Платеж ещё не поступил. Ожидание банка...', 'info');
       }
     } catch {
       /* ignore */
@@ -75,15 +79,15 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
       setCheckingAuto(false);
     }
     return false;
-  }, [haptic, navigate, showToast]);
+  }, [result?.pending_id, haptic, navigate, showToast]);
 
   useEffect(() => {
-    if (!result?.payment_url) return;
+    if (!result?.payment_url || !result?.pending_id) return;
     const interval = setInterval(() => {
-      checkAutoActivation();
+      checkAutoActivation(false);
     }, 4000);
     return () => clearInterval(interval);
-  }, [result?.payment_url, checkAutoActivation]);
+  }, [result?.payment_url, result?.pending_id, checkAutoActivation]);
 
   const handleOpenPayment = useCallback(() => {
     if (!result?.payment_url) return;
@@ -245,7 +249,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
 
           <button
             className="btn btn-secondary btn-block"
-            onClick={checkAutoActivation}
+            onClick={() => checkAutoActivation(true)}
             disabled={checkingAuto}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
           >

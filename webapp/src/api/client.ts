@@ -113,6 +113,10 @@ export async function markPaid(pendingId: number): Promise<{ status: string }> {
   return request(`/purchase/${pendingId}/paid`, { method: 'POST' });
 }
 
+export async function getPurchaseStatus(pendingId: number): Promise<{ pending_id: number; status: string; order_code: string }> {
+  return request(`/purchase/${pendingId}/status`);
+}
+
 /* ── Subscription ── */
 
 export async function getSubscription(): Promise<{ subscription: SubscriptionInfo | null }> {
