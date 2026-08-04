@@ -197,7 +197,10 @@ async def webhook_yoomoney(request: web.Request) -> web.Response:
         check_str = f"{notification_type}&{operation_id}&{amount}&{currency}&{datetime_val}&{sender}&{codeproto}&{settings.YOOMONEY_SECRET}&{label}"
         expected_hash = hashlib.sha1(check_str.encode("utf-8")).hexdigest()
         if expected_hash.lower() != sha1_hash.lower():
-            log.warning("Невалидный SHA1 хеш от ЮMoney для операции %s", operation_id)
+            log.warning(
+                "Невалидный SHA1 хеш от ЮMoney для операции %s. Got: %s, Expected: %s, Check_str: %r, Data: %r",
+                operation_id, sha1_hash, expected_hash, check_str, dict(data)
+            )
             return web.Response(status=400, text="invalid hash")
 
     if not label:
