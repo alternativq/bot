@@ -13,10 +13,9 @@ import {
   Zap,
   Settings,
   AlertTriangle,
-  Search,
+  HelpCircle,
   Key,
   Flame,
-  History,
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
@@ -117,12 +116,14 @@ export function HomePage({ navigate }: HomePageProps) {
 
         <button
           className="noir-icon-btn"
+          style={{ width: 'auto', padding: '0 12px', gap: 6 }}
           onClick={() => {
             haptic('light');
             navigate('faq');
           }}
         >
-          <Search size={18} />
+          <HelpCircle size={18} />
+          <span style={{ fontSize: 12, fontWeight: 800 }}>FAQ</span>
         </button>
       </div>
 
@@ -161,11 +162,11 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
 
         <div className="pulse-ring-text-main">
-          {sub?.active ? 'VeiloraVPN' : 'Нажмите для подписки'}
+          {sub?.active ? 'VeiloraVPN Активен' : 'Подключить VPN'}
         </div>
         <div className="pulse-ring-text-sub">
           <Zap size={13} style={{ color: sub?.active ? '#ffffff' : 'var(--text-muted)' }} />
-          <span>{sub?.active ? 'Нажмите, чтобы скопировать ключ в 1 клик' : 'Перейти в каталог тарифов →'}</span>
+          <span>{sub?.active ? '📋 Нажмите, чтобы скопировать ключ в 1 клик' : '🔥 Выбрать тариф и подключить за 1 мин →'}</span>
         </div>
       </div>
 
@@ -190,10 +191,10 @@ export function HomePage({ navigate }: HomePageProps) {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                <span style={{ fontSize: 14, fontWeight: 900, color: '#ffffff' }}>👋 Настройка за 30 секунд</span>
-                <span className="noir-badge" style={{ background: 'var(--success)', color: '#ffffff', fontSize: 9 }}>ИНТЕРАКТИВ</span>
+                <span style={{ fontSize: 14, fontWeight: 900, color: '#ffffff' }}>👋 Как настроить за 30 секунд</span>
+                <span className="noir-badge" style={{ background: 'var(--success)', color: '#ffffff', fontSize: 9 }}>ГИД</span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Пошаговый слайдер: Happ / v2raytun</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Пошаговая инструкция: Happ / v2raytun</div>
             </div>
           </div>
           <ChevronRight size={18} style={{ color: '#ffffff' }} />
@@ -291,7 +292,7 @@ export function HomePage({ navigate }: HomePageProps) {
                 }}
               >
                 <Key size={15} />
-                Подключение
+                Ключ и Инструкция
               </button>
               <button
                 className="copy-btn"
@@ -323,13 +324,13 @@ export function HomePage({ navigate }: HomePageProps) {
             }}
           >
             <Zap size={16} />
-            Выбрать тариф →
+            Выбрать тариф (от 99 ₽) →
           </button>
         </div>
       )}
 
       {/* Noir Section Title */}
-      <div className="noir-section-title">КАТАЛОГ УСЛУГ</div>
+      <div className="noir-section-title">БЫСТРЫЙ ДОСТУП</div>
 
       {/* 2-Column Catalog Cards matching NOIR MARKET layout */}
       <div className="noir-grid">
@@ -375,7 +376,7 @@ export function HomePage({ navigate }: HomePageProps) {
             <span className="noir-badge noir-badge-dark">VPN</span>
           </div>
 
-          <div className="noir-card-title">Моя подписка</div>
+          <div className="noir-card-title">Мой VPN Ключ</div>
           <div className="noir-card-desc">Ключ подключения & QR-код</div>
 
           <div className="noir-card-price-row">
@@ -383,37 +384,11 @@ export function HomePage({ navigate }: HomePageProps) {
           </div>
 
           <div className="noir-card-footer">
-            <span>📱 iOS / Android / PC</span>
+            <span>📱 Happ / v2raytun</span>
           </div>
         </div>
 
-        {/* Card 3: History */}
-        <div
-          className="card card-interactive"
-          onClick={() => {
-            haptic('light');
-            navigate('history');
-          }}
-        >
-          <div className="noir-card-top">
-            <div className="noir-card-icon-box">
-              <History size={22} />
-            </div>
-          </div>
-
-          <div className="noir-card-title">История</div>
-          <div className="noir-card-desc">Ваши покупки и транзакции</div>
-
-          <div className="noir-card-price-row">
-            <span className="noir-price">Отчёты</span>
-          </div>
-
-          <div className="noir-card-footer">
-            <span>📜 квитанции</span>
-          </div>
-        </div>
-
-        {/* Card 4: Settings / Profile */}
+        {/* Card 3: Settings / Profile */}
         <div
           className="card card-interactive"
           onClick={() => {
@@ -430,15 +405,42 @@ export function HomePage({ navigate }: HomePageProps) {
             )}
           </div>
 
-          <div className="noir-card-title">Настройки</div>
-          <div className="noir-card-desc">Промокоды & Бонусы</div>
+          <div className="noir-card-title">Скидки & Бонусы</div>
+          <div className="noir-card-desc">Промокоды & Рефералы</div>
 
           <div className="noir-card-price-row">
             <span className="noir-price">Профиль</span>
           </div>
 
           <div className="noir-card-footer">
-            <span>🎁 рефералы</span>
+            <span>🎁 бонусы</span>
+          </div>
+        </div>
+
+        {/* Card 4: FAQ / Help */}
+        <div
+          className="card card-interactive"
+          onClick={() => {
+            haptic('light');
+            navigate('faq');
+          }}
+        >
+          <div className="noir-card-top">
+            <div className="noir-card-icon-box">
+              <HelpCircle size={22} />
+            </div>
+            <span className="noir-badge noir-badge-dark">24/7</span>
+          </div>
+
+          <div className="noir-card-title">Помощь & FAQ</div>
+          <div className="noir-card-desc">Вопросы и инструкция</div>
+
+          <div className="noir-card-price-row">
+            <span className="noir-price">Справка</span>
+          </div>
+
+          <div className="noir-card-footer">
+            <span>❓ поддержка</span>
           </div>
         </div>
       </div>

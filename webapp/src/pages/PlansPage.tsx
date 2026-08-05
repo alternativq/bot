@@ -115,6 +115,11 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
   if (selectedPlan) {
     return (
       <div className="page">
+        <div className="funnel-step-header">
+          <span className="funnel-step-badge">ШАГ 2 ИЗ 3</span>
+          <span className="funnel-step-title">Выберите способ оплаты</span>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <button
             className="noir-icon-btn"
@@ -145,7 +150,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
           </div>
         </div>
 
-        <div className="noir-section-title">ВЫБЕРИТЕ ОПЛАТУ</div>
+        <div className="noir-section-title">ДОСТУПНЫЕ СПОСОБЫ ОПЛАТЫ</div>
 
         {methods.length === 0 ? (
           <div className="empty-state">
@@ -181,6 +186,11 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
 
   return (
     <div className="page">
+      <div className="funnel-step-header">
+        <span className="funnel-step-badge">ШАГ 1 ИЗ 3</span>
+        <span className="funnel-step-title">Выберите подходящий тариф</span>
+      </div>
+
       {/* Noir Header */}
       <div className="noir-header">
         <div className="noir-header-left">

@@ -1,5 +1,5 @@
 import type { Page } from '../App';
-import { Home, Layers, ShieldCheck, History, Settings, ShieldAlert } from 'lucide-react';
+import { Home, Layers, ShieldCheck, Settings, ShieldAlert } from 'lucide-react';
 import { useTelegram } from '../hooks/useTelegram';
 
 interface BottomNavProps {
@@ -20,9 +20,8 @@ export function BottomNav({ current, navigate, isAdmin }: BottomNavProps) {
   const tabs: NavTab[] = [
     { id: 'home', label: 'ГЛАВНАЯ', Icon: Home },
     { id: 'plans', label: 'ТАРИФЫ', Icon: Layers },
-    { id: 'subscription', label: 'VPN', Icon: ShieldCheck },
-    { id: 'history', label: 'ИСТОРИЯ', Icon: History },
-    { id: 'settings', label: 'ЕЩЁ', Icon: Settings },
+    { id: 'subscription', label: 'КЛЮЧИ', Icon: ShieldCheck },
+    { id: 'settings', label: 'ПРОФИЛЬ', Icon: Settings },
   ];
 
   if (isAdmin) {

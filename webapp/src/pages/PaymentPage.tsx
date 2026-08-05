@@ -186,6 +186,11 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
 
   return (
     <div className="page">
+      <div className="funnel-step-header">
+        <span className="funnel-step-badge">ШАГ 3 ИЗ 3</span>
+        <span className="funnel-step-title">Оплатите и получите ваш ключ</span>
+      </div>
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <button
           className="noir-icon-btn"
