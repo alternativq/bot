@@ -11,11 +11,9 @@ import {
   Copy,
   Check,
   Zap,
-  Settings,
   AlertTriangle,
   HelpCircle,
   Key,
-  Flame,
   ChevronRight,
   Sparkles,
 } from 'lucide-react';
@@ -329,121 +327,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       )}
 
-      {/* Noir Section Title */}
-      <div className="noir-section-title">БЫСТРЫЙ ДОСТУП</div>
 
-      {/* 2-Column Catalog Cards matching NOIR MARKET layout */}
-      <div className="noir-grid">
-        {/* Card 1: Plans */}
-        <div
-          className="card card-interactive"
-          onClick={() => {
-            haptic('light');
-            navigate('plans');
-          }}
-        >
-          <div className="noir-card-top">
-            <div className="noir-card-icon-box">
-              <Flame size={22} />
-            </div>
-            <span className="noir-badge">ХИТ</span>
-          </div>
-
-          <div className="noir-card-title">Тарифы VPN</div>
-          <div className="noir-card-desc">Все подписки · От 1 месяца</div>
-
-          <div className="noir-card-price-row">
-            <span className="noir-price">от 99 ₽</span>
-          </div>
-
-          <div className="noir-card-footer">
-            <span>⚡ моментальная выдача</span>
-          </div>
-        </div>
-
-        {/* Card 2: My VPN */}
-        <div
-          className="card card-interactive"
-          onClick={() => {
-            haptic('light');
-            navigate('subscription');
-          }}
-        >
-          <div className="noir-card-top">
-            <div className="noir-card-icon-box">
-              <Key size={22} />
-            </div>
-            <span className="noir-badge noir-badge-dark">VPN</span>
-          </div>
-
-          <div className="noir-card-title">Мой VPN Ключ</div>
-          <div className="noir-card-desc">Ключ подключения & QR-код</div>
-
-          <div className="noir-card-price-row">
-            <span className="noir-price">Ключи</span>
-          </div>
-
-          <div className="noir-card-footer">
-            <span>📱 Happ / v2raytun</span>
-          </div>
-        </div>
-
-        {/* Card 3: Settings / Profile */}
-        <div
-          className="card card-interactive"
-          onClick={() => {
-            haptic('light');
-            navigate('settings');
-          }}
-        >
-          <div className="noir-card-top">
-            <div className="noir-card-icon-box">
-              <Settings size={22} />
-            </div>
-            {profile && profile.discount_percent > 0 && (
-              <span className="noir-badge">-{profile.discount_percent}%</span>
-            )}
-          </div>
-
-          <div className="noir-card-title">Скидки & Бонусы</div>
-          <div className="noir-card-desc">Промокоды & Рефералы</div>
-
-          <div className="noir-card-price-row">
-            <span className="noir-price">Профиль</span>
-          </div>
-
-          <div className="noir-card-footer">
-            <span>🎁 бонусы</span>
-          </div>
-        </div>
-
-        {/* Card 4: FAQ / Help */}
-        <div
-          className="card card-interactive"
-          onClick={() => {
-            haptic('light');
-            navigate('faq');
-          }}
-        >
-          <div className="noir-card-top">
-            <div className="noir-card-icon-box">
-              <HelpCircle size={22} />
-            </div>
-            <span className="noir-badge noir-badge-dark">24/7</span>
-          </div>
-
-          <div className="noir-card-title">Помощь & FAQ</div>
-          <div className="noir-card-desc">Вопросы и инструкция</div>
-
-          <div className="noir-card-price-row">
-            <span className="noir-price">Справка</span>
-          </div>
-
-          <div className="noir-card-footer">
-            <span>❓ поддержка</span>
-          </div>
-        </div>
-      </div>
 
       {/* Full-Screen Interactive Onboarding Modal Wizard */}
       <OnboardingModal
