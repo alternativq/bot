@@ -91,9 +91,10 @@ class Settings(BaseSettings):
     MINIAPP_URL: str = ""       # URL где развёрнут фронтенд Mini App (для CORS)
     JWT_SECRET: str = ""        # секрет для JWT; если пуст — используется BOT_TOKEN
 
-    # Пробный период
+    # Пробный период и лимиты
     TRIAL_ENABLED: bool = True
     TRIAL_DURATION_DAYS: int = 2
+    MAX_SUBSCRIPTION_DAYS: int = 100
 
     @property
     def admin_ids(self) -> list[int]:

@@ -29,7 +29,7 @@ from services.promo_system import (
     ensure_referral_code,
     get_active_discount_for_user,
 )
-from services.provisioning import handle_trial_activation
+from services.provisioning import handle_trial_activation, utcnow
 
 log = logging.getLogger(__name__)
 api_routes = web.RouteTableDef()
@@ -157,8 +157,14 @@ async def get_plans(request: web.Request) -> web.Response:
     """Список всех тарифов."""
     tg_id = request["user"]["tg_id"]
 
+    days_left = 0
     async with get_session() as session:
         user = await session.get(User, tg_id)
+        sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id))
+        if sub and sub.is_active():
+            now = utcnow()
+            if sub.period_end > now:
+                days_left = (sub.period_end - now).days
 
     trial_available = (
         settings.TRIAL_ENABLED
@@ -191,7 +197,12 @@ async def get_plans(request: web.Request) -> web.Response:
             "is_trial": True,
         })
 
-    return _json({"plans": plans_list, "trial_available": trial_available})
+    return _json({
+        "plans": plans_list,
+        "trial_available": trial_available,
+        "days_left": days_left,
+        "max_subscription_days": settings.MAX_SUBSCRIPTION_DAYS,
+    })
 
 
 # ──────────────────────────────────────────────────────────────
@@ -235,6 +246,20 @@ async def create_purchase(request: web.Request) -> web.Response:
     plan = get_plan(plan_id)
     if plan is None:
         return _error("Plan not found")
+
+    # Проверка превышения максимального лимита дней (MAX_SUBSCRIPTION_DAYS)
+    async with get_session() as session:
+        sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id))
+        if sub and sub.is_active():
+            now = utcnow()
+            if sub.period_end > now:
+                current_days = (sub.period_end - now).days
+                if current_days + plan.duration_days > settings.MAX_SUBSCRIPTION_DAYS:
+                    max_allowed = max(0, settings.MAX_SUBSCRIPTION_DAYS - current_days)
+                    return _error(
+                        f"Максимальный срок подписки — {settings.MAX_SUBSCRIPTION_DAYS} дней. "
+                        f"У вас уже осталось {current_days} дн. Вы можете продлить подписку не более чем на {max_allowed} дн."
+                    )
 
     # Активация пробного периода — без оплаты
     if plan.is_trial:

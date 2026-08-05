@@ -19,6 +19,13 @@ export interface Plan {
   is_trial: boolean;
 }
 
+export interface PlansResponse {
+  plans: Plan[];
+  trial_available: boolean;
+  days_left?: number;
+  max_subscription_days?: number;
+}
+
 export interface PaymentMethod {
   id: string;
   title: string;

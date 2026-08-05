@@ -8,7 +8,7 @@ import type {
   PaymentHistoryItem,
   PaymentMethod,
   PendingPaymentAdmin,
-  Plan,
+  PlansResponse,
   PurchaseResult,
   ReferralInfo,
   SubscriptionInfo,
@@ -69,18 +69,18 @@ export async function getMe(): Promise<UserProfile> {
 }
 
 /* ── Cache for static metadata ── */
-let plansCache: { data: { plans: Plan[]; trial_available: boolean }; timestamp: number } | null = null;
+let plansCache: { data: PlansResponse; timestamp: number } | null = null;
 let methodsCache: { data: { methods: PaymentMethod[] }; timestamp: number } | null = null;
 const CACHE_TTL_MS = 30000;
 
 /* ── Plans ── */
 
-export async function getPlans(): Promise<{ plans: Plan[]; trial_available: boolean }> {
+export async function getPlans(): Promise<PlansResponse> {
   const now = Date.now();
   if (plansCache && now - plansCache.timestamp < CACHE_TTL_MS) {
     return plansCache.data;
   }
-  const data = await request<{ plans: Plan[]; trial_available: boolean }>('/plans');
+  const data = await request<PlansResponse>('/plans');
   plansCache = { data, timestamp: now };
   return data;
 }

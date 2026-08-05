@@ -29,6 +29,8 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
   const { showToast } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [trialAvailable, setTrialAvailable] = useState(false);
+  const [daysLeft, setDaysLeft] = useState<number>(0);
+  const [maxSubDays, setMaxSubDays] = useState<number>(100);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeDuration, setActiveDuration] = useState<DurationGroup>('m1');
@@ -55,6 +57,8 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
         ]);
         setPlans(plansData.plans);
         setTrialAvailable(plansData.trial_available);
+        if (plansData.days_left !== undefined) setDaysLeft(plansData.days_left);
+        if (plansData.max_subscription_days !== undefined) setMaxSubDays(plansData.max_subscription_days);
         setMethods(methodsData.methods);
       } catch {
         /* handled */
@@ -84,10 +88,19 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
 
   const handleSelectPlan = useCallback(
     (plan: Plan) => {
+      if (daysLeft > 0 && daysLeft + plan.duration_days > maxSubDays) {
+        haptic('heavy');
+        const maxAllowed = Math.max(0, maxSubDays - daysLeft);
+        showToast(
+          `Максимальный срок подписки — ${maxSubDays} дней. У вас осталось ${daysLeft} дн. Продление доступно не более чем на ${maxAllowed} дн.`,
+          'error',
+        );
+        return;
+      }
       haptic('medium');
       setSelectedPlan(plan);
     },
-    [haptic],
+    [daysLeft, maxSubDays, haptic, showToast],
   );
 
   const handleSelectMethod = useCallback(
@@ -203,6 +216,18 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Active Subscription Days Cap Info */}
+      {daysLeft > 0 && (
+        <div className="card" style={{ marginBottom: 14, padding: '10px 14px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--glass-border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12.5 }}>
+            <span style={{ color: 'var(--text-secondary)' }}>Текущая подписка:</span>
+            <span style={{ fontWeight: 850, color: '#ffffff' }}>
+              Осталось {daysLeft} дн. (Лимит: {maxSubDays} дн.)
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Noir Pill Filter Scroll Bar */}
       <div className="noir-pills-scroll">
