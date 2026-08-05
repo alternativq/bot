@@ -217,17 +217,7 @@ export function PlansPage({ navigate, goToPayment }: PlansPageProps) {
         </div>
       </div>
 
-      {/* Active Subscription Days Cap Info */}
-      {daysLeft > 0 && (
-        <div className="card" style={{ marginBottom: 14, padding: '10px 14px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--glass-border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12.5 }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Текущая подписка:</span>
-            <span style={{ fontWeight: 850, color: '#ffffff' }}>
-              Осталось {daysLeft} дн. (Лимит: {maxSubDays} дн.)
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* Noir Pill Filter Scroll Bar */}
       <div className="noir-pills-scroll">
