@@ -220,6 +220,7 @@ async def get_methods(request: web.Request) -> web.Response:
                 "title": m.title,
                 "requisite_label": m.requisite_label,
                 "requisite": m.requisite,
+                "payment_url": m.payment_url,
             }
             for m in methods
         ]
@@ -325,6 +326,9 @@ async def create_purchase(request: web.Request) -> web.Response:
         "requisite_label": method.requisite_label,
         "requisite": method.requisite,
     }
+
+    if method.payment_url:
+        result["payment_url"] = method.payment_url
 
     # Для ЮMoney авто — генерируем ссылку на оплату
     if method_id == "yoomoney_auto":

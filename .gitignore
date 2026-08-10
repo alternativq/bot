@@ -1,15 +1,41 @@
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .pytest_cache/
-.env
+
+# Databases (VERY IMPORTANT: NEVER TRACK DB FILES)
 bot.db
 bot.db-shm
 bot.db-wal
-*.db*
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.bak
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
 
 # Node / webapp
 node_modules/
+webapp/node_modules/
+webapp/dist/
 dist/
+.npm
+.eslintcache
+
+# OS & Editor
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+scratch/
+scratch_*.py

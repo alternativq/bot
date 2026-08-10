@@ -31,6 +31,7 @@ export interface PaymentMethod {
   title: string;
   requisite_label: string;
   requisite: string;
+  payment_url?: string;
 }
 
 export interface TrafficInfo {

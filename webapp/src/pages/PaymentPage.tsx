@@ -14,6 +14,7 @@ import {
   Loader2,
   Zap,
   RefreshCw,
+  Smartphone,
 } from 'lucide-react';
 
 interface PaymentPageProps {
@@ -31,6 +32,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
   const [notified, setNotified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedReq, setCopiedReq] = useState(false);
+  const [copiedPayUrl, setCopiedPayUrl] = useState(false);
   const [checkingAuto, setCheckingAuto] = useState(false);
 
   useEffect(() => {
@@ -59,6 +61,8 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
     init();
   }, [planId, methodId, navigate, showToast]);
 
+  const isAuto = methodId === 'yoomoney_auto' || methodId === 'cryptobot';
+
   const checkAutoActivation = useCallback(async (isManual = false) => {
     if (!result?.pending_id) return false;
     setCheckingAuto(true);
@@ -82,12 +86,12 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
   }, [result?.pending_id, haptic, navigate, showToast]);
 
   useEffect(() => {
-    if (!result?.payment_url || !result?.pending_id) return;
+    if (!result?.payment_url || !result?.pending_id || !isAuto) return;
     const interval = setInterval(() => {
       checkAutoActivation(false);
     }, 4000);
     return () => clearInterval(interval);
-  }, [result?.payment_url, result?.pending_id, checkAutoActivation]);
+  }, [result?.payment_url, result?.pending_id, isAuto, checkAutoActivation]);
 
   const handleOpenPayment = useCallback(() => {
     if (!result?.payment_url) return;
@@ -115,12 +119,27 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
     try {
       await navigator.clipboard.writeText(result.requisite);
       setCopiedReq(true);
+      haptic('light');
       showToast('Реквизиты скопированы', 'success');
       setTimeout(() => setCopiedReq(false), 2000);
     } catch {
       showToast('Не удалось скопировать', 'error');
     }
-  }, [result, showToast]);
+  }, [result, haptic, showToast]);
+
+  const copyPaymentUrl = useCallback(async () => {
+    const url = result?.payment_url || result?.requisite;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedPayUrl(true);
+      haptic('light');
+      showToast('Ссылка на оплату скопирована в буфер', 'success');
+      setTimeout(() => setCopiedPayUrl(false), 2000);
+    } catch {
+      showToast('Не удалось скопировать', 'error');
+    }
+  }, [result, haptic, showToast]);
 
   if (loading) {
     return (
@@ -232,7 +251,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
         )}
       </div>
 
-      {result.payment_url ? (
+      {isAuto && result.payment_url ? (
         <div>
           <div className="card" style={{ padding: 14, background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 850, color: 'var(--success)', marginBottom: 6 }}>
@@ -243,13 +262,78 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
             </div>
           </div>
 
+          {methodId === 'yoomoney_auto' && (
+            <div
+              className="card"
+              style={{
+                padding: 14,
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(234, 88, 12, 0.08) 100%)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.08)',
+                marginBottom: 14,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12.5,
+                  fontWeight: 850,
+                  color: '#fbbf24',
+                  marginBottom: 8,
+                }}
+              >
+                <Smartphone size={16} /> ДЛЯ ВЛАДЕЛЬЦЕВ IOS (IPHONE)
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Чтобы оплатить через SberPay / Карту без проблем и ошибок сертификатов:
+                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                    <span style={{ color: '#fbbf24', fontWeight: 800 }}>1.</span>
+                    <span>Скопируйте ссылку кнопкой <strong style={{ color: '#ffffff' }}>«Скопировать ссылку на оплату»</strong> ниже.</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                    <span style={{ color: '#fbbf24', fontWeight: 800 }}>2.</span>
+                    <span>Вставьте ссылку в <strong style={{ color: '#ffffff' }}>Яндекс Браузер</strong> (в него уже встроены сертификаты) и завершите оплату.</span>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: '8px 10px',
+                    background: 'rgba(0, 0, 0, 0.32)',
+                    borderRadius: 8,
+                    fontSize: 11.5,
+                    color: '#e2e8f0',
+                    lineHeight: 1.45,
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  💡 <em>Не обязательно скачивать приложение — можно просто открыть в Safari «Яндекс Браузер» / ya.ru или приложение Яндекс, вставить ссылку туда и всё заработает.</em>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             className="btn btn-primary btn-block"
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: 10 }}
             onClick={handleOpenPayment}
           >
             <ExternalLink size={16} />
-            Оплатить через SberPay / Карту ({result.amount_rub} ₽)
+            {methodId === 'cryptobot'
+              ? 'Оплатить через @CryptoBot'
+              : `Оплатить через Карту РФ / SberPay (${result.amount_rub} ₽)`}
+          </button>
+
+          <button
+            className="btn btn-secondary btn-block"
+            style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            onClick={copyPaymentUrl}
+          >
+            {copiedPayUrl ? <Check size={16} /> : <Copy size={16} />}
+            <span>{copiedPayUrl ? 'Ссылка скопирована' : 'Скопировать ссылку на оплату'}</span>
           </button>
 
           <button
@@ -261,6 +345,55 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
             <RefreshCw size={16} style={checkingAuto ? { animation: 'spin 1s linear infinite' } : {}} />
             <span>{checkingAuto ? 'Проверка...' : 'Проверить статус зачисления'}</span>
           </button>
+        </div>
+      ) : result.payment_url ? (
+        <div>
+          <div className="card" style={{ padding: 14, marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', marginBottom: 6 }}>
+              {result.requisite_label || 'Оплата по ссылке / в приложении'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              Нажмите кнопку <strong style={{ color: '#ffffff' }}>«Перейти к оплате»</strong> для открытия ссылки перевода, оплатите <strong style={{ color: '#ffffff' }}>{result.amount_rub} ₽</strong>, затем вернитесь и нажмите кнопку <strong style={{ color: '#ffffff' }}>«Я оплатил»</strong>.
+            </div>
+          </div>
+
+          <button
+            className="btn btn-primary btn-block"
+            style={{ marginBottom: 10 }}
+            onClick={handleOpenPayment}
+          >
+            <ExternalLink size={16} />
+            Перейти к оплате ({result.amount_rub} ₽)
+          </button>
+
+          <button
+            className="btn btn-secondary btn-block"
+            style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            onClick={copyPaymentUrl}
+          >
+            {copiedPayUrl ? <Check size={16} /> : <Copy size={16} />}
+            <span>{copiedPayUrl ? 'Ссылка скопирована' : 'Скопировать ссылку на оплату'}</span>
+          </button>
+
+          {result.pending_id && (
+            <button
+              className="btn btn-secondary btn-block"
+              onClick={handleMarkPaid}
+              disabled={notifying}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              {notifying ? (
+                <>
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                  Отправка...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} />Я оплатил
+                </>
+              )}
+            </button>
+          )}
         </div>
       ) : (
         <div>
@@ -287,6 +420,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
               className="btn btn-secondary btn-block"
               onClick={handleMarkPaid}
               disabled={notifying}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
               {notifying ? (
                 <>

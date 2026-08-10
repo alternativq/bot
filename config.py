@@ -43,7 +43,8 @@ class Settings(BaseSettings):
 
     YOOMONEY_WALLET: str = ""          # номер кошелька ЮMoney, например 4100XXXXXXXXXXXX
     YOOMONEY_SECRET: str = ""          # секретный ключ для проверки HTTP-уведомлений ЮMoney
-    OZON_REQUISITE: str = ""           # номер карты Ozon Банк или телефон для перевода по СБП
+    OZON_REQUISITE: str = ""           # номер карты Ozon Банк или телефон для перевода по СБП (или ссылка)
+    OZON_PAY_URL: str = ""             # прямая ссылка на оплату / перевод в Ozon Банк (опционально)
 
     # CryptoBot (@CryptoBot / CryptoPay)
     CRYPTO_PAY_TOKEN: str = ""         # API токен CryptoPay от @CryptoBot (раздел Crypto Pay -> My Apps)
