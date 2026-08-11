@@ -304,7 +304,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                     <span style={{ color: '#fbbf24', fontWeight: 800 }}>2.</span>
-                    <span>Скопируйте ссылку кнопкой <strong style={{ color: '#ffffff' }}>«Скопировать ссылку на оплату»</strong>.</span>
+                    <span>Скопируйте ссылку кнопкой <strong style={{ color: '#ffffff' }}>«Скопировать ссылку на оплату (для iOS)»</strong>.</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                     <span style={{ color: '#fbbf24', fontWeight: 800 }}>3.</span>
@@ -367,7 +367,13 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
             onClick={copyPaymentUrl}
           >
             {copiedPayUrl ? <Check size={16} /> : <Copy size={16} />}
-            <span>{copiedPayUrl ? 'Ссылка скопирована' : 'Скопировать ссылку на оплату'}</span>
+            <span>
+              {copiedPayUrl
+                ? 'Ссылка скопирована'
+                : methodId === 'yoomoney_auto'
+                  ? 'Скопировать ссылку на оплату (для iOS)'
+                  : 'Скопировать ссылку на оплату'}
+            </span>
           </button>
 
           <button
