@@ -15,7 +15,11 @@ import {
   Zap,
   RefreshCw,
   Smartphone,
+  Download,
 } from 'lucide-react';
+
+const YANDEX_BROWSER_IOS_URL =
+  'https://redirect.appmetrica.yandex.com/serve/102029031628655031?partner_id=831050&appmetrica_js_redirect=0&clid=15275391&banerid=1315275392&full=0';
 
 interface PaymentPageProps {
   navigate: (page: Page) => void;
@@ -140,6 +144,11 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
       showToast('Не удалось скопировать', 'error');
     }
   }, [result, haptic, showToast]);
+
+  const handleDownloadYandexBrowser = useCallback(() => {
+    haptic('medium');
+    tg?.openLink(YANDEX_BROWSER_IOS_URL);
+  }, [haptic, tg]);
 
   if (loading) {
     return (
@@ -287,20 +296,26 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
                 <Smartphone size={16} /> ДЛЯ ВЛАДЕЛЬЦЕВ IOS (IPHONE)
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Чтобы оплатить через SberPay / Карту без проблем и ошибок сертификатов:
-                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                Для безопасной оплаты через SberPay без ошибок сертификатов на iPhone обязательно требуется <strong style={{ color: '#ffffff' }}>Яндекс Браузер</strong> (в него уже встроены государственные сертификаты безопасности Минцифры):
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                     <span style={{ color: '#fbbf24', fontWeight: 800 }}>1.</span>
-                    <span>Скопируйте ссылку кнопкой <strong style={{ color: '#ffffff' }}>«Скопировать ссылку на оплату»</strong> ниже.</span>
+                    <span>Установите Яндекс Браузер по кнопке ниже.</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                     <span style={{ color: '#fbbf24', fontWeight: 800 }}>2.</span>
-                    <span>Вставьте ссылку в <strong style={{ color: '#ffffff' }}>Яндекс Браузер</strong> (в него уже встроены сертификаты) и завершите оплату.</span>
+                    <span>Скопируйте ссылку кнопкой <strong style={{ color: '#ffffff' }}>«Скопировать ссылку на оплату»</strong>.</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                    <span style={{ color: '#fbbf24', fontWeight: 800 }}>3.</span>
+                    <span>Вставьте ссылку в адресную строку Яндекс Браузера и оплатите заказ.</span>
                   </div>
                 </div>
+
                 <div
                   style={{
-                    marginTop: 8,
+                    marginTop: 10,
+                    marginBottom: 10,
                     padding: '8px 10px',
                     background: 'rgba(0, 0, 0, 0.32)',
                     borderRadius: 8,
@@ -310,8 +325,27 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                   }}
                 >
-                  💡 <em>Не обязательно скачивать приложение — можно просто открыть в Safari «Яндекс Браузер» / ya.ru или приложение Яндекс, вставить ссылку туда и всё заработает.</em>
+                  💡 <em>(Установка Яндекс Браузера на iOS необходима не только для оплаты VPN, но и в целом для стабильной и комфортной работы сайтов любых российских банков и сервисов, если их приложения не установлены на телефоне.)</em>
                 </div>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-block"
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.16)',
+                    borderColor: 'rgba(245, 158, 11, 0.45)',
+                    color: '#fef08a',
+                    fontWeight: 750,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                  onClick={handleDownloadYandexBrowser}
+                >
+                  <Download size={16} />
+                  <span>Скачать Яндекс Браузер для iOS</span>
+                </button>
               </div>
             </div>
           )}
