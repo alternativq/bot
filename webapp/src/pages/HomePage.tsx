@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Page } from '../App';
-import { authenticate, getMe, setAuthToken, getAuthToken } from '../api/client';
+import { authenticate, getMe, setAuthToken, getAuthToken, activateTrial } from '../api/client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useToast } from '../context/ToastContext';
 import logoImg from '../assets/logo.webp';
@@ -16,6 +16,7 @@ import {
   Key,
   ChevronRight,
   Sparkles,
+  Gift,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -30,6 +31,7 @@ export function HomePage({ navigate }: HomePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [trialLoading, setTrialLoading] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -62,6 +64,21 @@ export function HomePage({ navigate }: HomePageProps) {
       showToast('Не удалось скопировать', 'error');
     }
   }, [profile, showToast]);
+
+  const handleActivateTrial = useCallback(async () => {
+    setTrialLoading(true);
+    haptic('heavy');
+    try {
+      await activateTrial();
+      showToast('🎉 Пробный период успешно активирован!', 'success');
+      const updated = await getMe();
+      setProfile(updated);
+    } catch (err: any) {
+      showToast(err.message || 'Не удалось активировать триал', 'error');
+    } finally {
+      setTrialLoading(false);
+    }
+  }, [haptic, showToast]);
 
   if (loading) {
     return (
@@ -279,10 +296,36 @@ export function HomePage({ navigate }: HomePageProps) {
             );
           })()}
 
+          {/* Fast renewal button for users with <= 7 days or expired sub */}
+          {(sub.days_left <= 7 || !sub.active) && (
+            <button
+              className="btn btn-primary btn-block"
+              style={{
+                marginTop: 14,
+                marginBottom: 10,
+                background: sub.days_left <= 3
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#ffffff',
+                fontWeight: 850,
+                boxShadow: sub.days_left <= 3
+                  ? '0 8px 24px rgba(239, 68, 68, 0.4)'
+                  : '0 8px 24px rgba(245, 158, 11, 0.35)',
+              }}
+              onClick={() => {
+                haptic('medium');
+                navigate('plans');
+              }}
+            >
+              <Zap size={16} />
+              <span>⚡ Продлить подписку ({sub.days_left === 0 ? 'Истекла' : `Осталось ${sub.days_left} дн.`}) →</span>
+            </button>
+          )}
+
           {sub.sub_link && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: (sub.days_left <= 7 || !sub.active) ? 0 : 14 }}>
               <button
-                className="btn btn-primary btn-sm"
+                className="btn btn-secondary btn-sm"
                 style={{ flex: 1 }}
                 onClick={() => {
                   haptic('medium');
@@ -306,24 +349,57 @@ export function HomePage({ navigate }: HomePageProps) {
       ) : (
         <div className="card card-accent" style={{ textAlign: 'center', padding: '24px 16px', marginBottom: 20 }}>
           <div style={{ width: 52, height: 52, borderRadius: 16, background: '#ffffff', color: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <ShieldCheck size={28} />
+            {profile?.trial_enabled && !profile?.trial_used ? <Gift size={28} /> : <ShieldCheck size={28} />}
           </div>
-          <div style={{ fontSize: 17, fontWeight: 850, color: '#ffffff', marginBottom: 4 }}>
-            Нет активной подписки
+          <div style={{ fontSize: 18, fontWeight: 850, color: '#ffffff', marginBottom: 4 }}>
+            {profile?.trial_enabled && !profile?.trial_used ? 'Попробуйте VeiloraVPN бесплатно' : 'Нет активной подписки'}
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 16 }}>
-            Выберите тариф и получите безопасный VPN за 1 минуту
+            {profile?.trial_enabled && !profile?.trial_used
+              ? 'Вам доступен бесплатный пробный период на 2 дня без привязки карты'
+              : 'Выберите тариф и получите безопасный VPN за 1 минуту'}
           </div>
-          <button
-            className="btn btn-primary btn-block"
-            onClick={() => {
-              haptic('medium');
-              navigate('plans');
-            }}
-          >
-            <Zap size={16} />
-            Выбрать тариф (от 99 ₽) →
-          </button>
+
+          {profile?.trial_enabled && !profile?.trial_used ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                className="btn btn-primary btn-block"
+                style={{
+                  background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
+                  color: '#000000',
+                  fontWeight: 850,
+                  boxShadow: '0 8px 24px rgba(255, 255, 255, 0.3)',
+                }}
+                disabled={trialLoading}
+                onClick={handleActivateTrial}
+              >
+                <Gift size={16} />
+                <span>{trialLoading ? 'Активация...' : '🎁 Попробовать бесплатно (2 дня) →'}</span>
+              </button>
+
+              <button
+                className="btn btn-secondary btn-block"
+                onClick={() => {
+                  haptic('medium');
+                  navigate('plans');
+                }}
+              >
+                <Zap size={16} />
+                <span>Выбрать платный тариф (от 99 ₽) →</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              className="btn btn-primary btn-block"
+              onClick={() => {
+                haptic('medium');
+                navigate('plans');
+              }}
+            >
+              <Zap size={16} />
+              Выбрать тариф (от 99 ₽) →
+            </button>
+          )}
         </div>
       )}
 
