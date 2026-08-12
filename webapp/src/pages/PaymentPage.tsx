@@ -293,7 +293,7 @@ export function PaymentPage({ navigate, planId, methodId }: PaymentPageProps) {
                   marginBottom: 8,
                 }}
               >
-                <Smartphone size={16} /> ДЛЯ ВЛАДЕЛЬЦЕВ IOS (IPHONE)
+                <Smartphone size={16} /> ДЛЯ ВЛАДЕЛЬЦЕВ IOS, ЕСЛИ НЕ УСТАНОВЛЕНО ПРИЛОЖЕНИЕ БАНКА (IPHONE)
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                 Для безопасной оплаты через SberPay без ошибок сертификатов на iPhone обязательно требуется <strong style={{ color: '#ffffff' }}>Яндекс Браузер</strong> (в него уже встроены государственные сертификаты безопасности Минцифры):
