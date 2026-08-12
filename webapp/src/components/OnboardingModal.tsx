@@ -42,7 +42,7 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
     let url = 'https://happ.su/';
     if (app === 'happ') {
       if (isIos) url = 'https://apps.apple.com/app/id6504287215';
-      else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy.happ';
+      else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy';
       else url = 'https://happ.su/';
     } else if (app === 'v2raytun') {
       if (isIos) url = 'https://apps.apple.com/app/id6476628951';
