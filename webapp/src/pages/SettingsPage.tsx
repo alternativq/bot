@@ -196,7 +196,7 @@ export function SettingsPage({ navigate }: SettingsPageProps) {
 
       {/* Promo */}
       <div style={{ marginBottom: 18 }}>
-        <div className="noir-section-title">ПРОМОКОД</div>
+        <div className="noir-section-title">ПРОМОКОД / РЕФЕРАЛЬНЫЙ КОД</div>
 
         <div className="card">
           <div style={{ display: 'flex', gap: 8 }}>

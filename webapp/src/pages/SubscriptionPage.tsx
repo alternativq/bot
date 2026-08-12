@@ -84,11 +84,11 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       const isIos = tg?.platform === 'ios' || /iphone|ipad|ipod/i.test(navigator.userAgent);
       const isAndroid = tg?.platform === 'android' || /android/i.test(navigator.userAgent);
 
-      let url = 'https://happ.im/';
+      let url = 'https://happ.su/';
       if (app === 'happ') {
         if (isIos) url = 'https://apps.apple.com/app/happ-proxy-utility/id6504287215';
         else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy.happ';
-        else url = 'https://happ.im/';
+        else url = 'https://happ.su/';
       } else if (app === 'v2raytun') {
         if (isIos) url = 'https://apps.apple.com/app/v2raytun/id6476628951';
         else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
