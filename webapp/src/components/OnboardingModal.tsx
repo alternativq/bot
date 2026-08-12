@@ -41,15 +41,20 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
 
     let url = 'https://happ.su/';
     if (app === 'happ') {
-      if (isIos) url = 'https://apps.apple.com/app/happ-proxy-utility/id6504287215';
+      if (isIos) url = 'https://apps.apple.com/app/id6504287215';
       else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy.happ';
       else url = 'https://happ.su/';
     } else if (app === 'v2raytun') {
-      if (isIos) url = 'https://apps.apple.com/app/v2raytun/id6476628951';
+      if (isIos) url = 'https://apps.apple.com/app/id6476628951';
       else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
       else url = 'https://v2raytun.com/';
     }
-    tg?.openLink(url);
+
+    if (tg && typeof tg.openLink === 'function') {
+      tg.openLink(url);
+    } else {
+      window.open(url, '_blank');
+    }
   };
 
   const handleCopy = async () => {
