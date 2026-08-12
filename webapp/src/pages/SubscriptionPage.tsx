@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Zap,
   Sparkles,
+  Download,
 } from 'lucide-react';
 
 interface SubscriptionPageProps {
@@ -21,7 +22,7 @@ interface SubscriptionPageProps {
 }
 
 export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
-  const { haptic, showBackButton, hideBackButton } = useTelegram();
+  const { tg, haptic, showBackButton, hideBackButton } = useTelegram();
   const { showToast } = useToast();
   const [sub, setSub] = useState<SubscriptionInfo | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
@@ -76,6 +77,27 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
       showToast('Ошибка загрузки QR', 'error');
     }
   }, [haptic, qrData, showQR, showToast]);
+
+  const handleDownloadApp = useCallback(
+    (app: 'happ' | 'v2raytun') => {
+      haptic('medium');
+      const isIos = tg?.platform === 'ios' || /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isAndroid = tg?.platform === 'android' || /android/i.test(navigator.userAgent);
+
+      let url = 'https://happ.im/';
+      if (app === 'happ') {
+        if (isIos) url = 'https://apps.apple.com/app/happ-proxy-utility/id6504287215';
+        else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy.happ';
+        else url = 'https://happ.im/';
+      } else if (app === 'v2raytun') {
+        if (isIos) url = 'https://apps.apple.com/app/v2raytun/id6476628951';
+        else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
+        else url = 'https://v2raytun.com/';
+      }
+      tg?.openLink(url);
+    },
+    [haptic, tg],
+  );
 
   if (loading) {
     return (
@@ -254,15 +276,23 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
             3. В Happ нажмите <strong>«+» → Импорт из буфера</strong>.
           </div>
 
-          <button
-            className="btn btn-primary btn-block btn-sm"
-            onClick={() => {
-              haptic('medium');
-              copyLink();
-            }}
-          >
-            <Copy size={14} /> Скопировать ключ для Happ
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              className="btn btn-primary btn-block btn-sm"
+              onClick={() => handleDownloadApp('happ')}
+            >
+              <Download size={14} /> Скачать Happ App
+            </button>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => {
+                haptic('medium');
+                copyLink();
+              }}
+            >
+              <Copy size={14} /> Скопировать ключ для Happ
+            </button>
+          </div>
         </div>
 
         {/* App 2: v2raytun */}
@@ -286,15 +316,23 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
             3. В v2raytun нажмите <strong>«Вставить подписку»</strong>.
           </div>
 
-          <button
-            className="btn btn-secondary btn-block btn-sm"
-            onClick={() => {
-              haptic('medium');
-              copyLink();
-            }}
-          >
-            <Copy size={14} /> Скопировать ключ для v2raytun
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => handleDownloadApp('v2raytun')}
+            >
+              <Download size={14} /> Скачать v2raytun
+            </button>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => {
+                haptic('medium');
+                copyLink();
+              }}
+            >
+              <Copy size={14} /> Скопировать ключ для v2raytun
+            </button>
+          </div>
         </div>
       </div>
 

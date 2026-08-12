@@ -20,7 +20,7 @@ interface OnboardingModalProps {
 }
 
 export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalProps) {
-  const { haptic } = useTelegram();
+  const { tg, haptic } = useTelegram();
   const { showToast } = useToast();
   const [slide, setSlide] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -33,6 +33,24 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const handleDownloadApp = (app: 'happ' | 'v2raytun') => {
+    haptic('medium');
+    const isIos = tg?.platform === 'ios' || /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = tg?.platform === 'android' || /android/i.test(navigator.userAgent);
+
+    let url = 'https://happ.im/';
+    if (app === 'happ') {
+      if (isIos) url = 'https://apps.apple.com/app/happ-proxy-utility/id6504287215';
+      else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy.happ';
+      else url = 'https://happ.im/';
+    } else if (app === 'v2raytun') {
+      if (isIos) url = 'https://apps.apple.com/app/v2raytun/id6476628951';
+      else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
+      else url = 'https://v2raytun.com/';
+    }
+    tg?.openLink(url);
+  };
 
   const handleCopy = async () => {
     if (!subLink) {
@@ -188,9 +206,17 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
                   </div>
                   <span className="noir-badge" style={{ background: 'var(--success)', color: '#ffffff', fontSize: 10 }}>РЕКОМЕНДУЕМ</span>
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.35, marginBottom: 10 }}>
                   Подходит для iOS, Android и Windows. Поддерживает авто-запуск и высокую скорость.
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-block btn-sm"
+                  style={{ fontSize: 12, padding: '8px 12px' }}
+                  onClick={() => handleDownloadApp('happ')}
+                >
+                  <Download size={14} /> Скачать Happ
+                </button>
               </div>
 
               {/* v2raytun Client */}
@@ -210,9 +236,17 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
                   </div>
                   <span className="noir-badge noir-badge-dark" style={{ fontSize: 10 }}>iOS / Android / Win</span>
                 </div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.35, marginBottom: 10 }}>
                   Универсальный клиент для защиты трафика и стабильного подключения.
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-block btn-sm"
+                  style={{ fontSize: 12, padding: '8px 12px' }}
+                  onClick={() => handleDownloadApp('v2raytun')}
+                >
+                  <Download size={14} /> Скачать v2raytun
+                </button>
               </div>
             </div>
           </div>
