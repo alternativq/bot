@@ -69,6 +69,11 @@ async def serve_unified_subscription(request: web.Request) -> web.Response:
         "Profile-Title": profile_title,
         "Profile-Update-Interval": str(settings.SUB_UPDATE_INTERVAL_HOURS),
     }
+    if userinfo.routing:
+        headers["routing"] = userinfo.routing
+        if "http" in userinfo.routing:
+            clean_url = userinfo.routing.split("onadd/", 1)[-1] if "onadd/" in userinfo.routing else userinfo.routing
+            headers["autorouting"] = clean_url
     return web.Response(text=content, content_type="text/plain", headers=headers)
 
 

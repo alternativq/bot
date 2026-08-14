@@ -365,12 +365,13 @@ class SubUserInfo:
     download: int = 0
     total: int = 0
     expire: int = 0
+    routing: str = ""
 
     def as_header(self) -> str:
         return f"upload={self.upload}; download={self.download}; total={self.total}; expire={self.expire}"
 
 
-def _parse_userinfo_header(value: str) -> SubUserInfo:
+def _parse_userinfo_header(value: str, routing: str = "") -> SubUserInfo:
     parts: dict[str, str] = {}
     for chunk in value.split(";"):
         chunk = chunk.strip()
@@ -384,7 +385,7 @@ def _parse_userinfo_header(value: str) -> SubUserInfo:
         except ValueError:
             return 0
 
-    return SubUserInfo(upload=_int("upload"), download=_int("download"), total=_int("total"), expire=_int("expire"))
+    return SubUserInfo(upload=_int("upload"), download=_int("download"), total=_int("total"), expire=_int("expire"), routing=routing)
 
 
 async def fetch_native_configs(
@@ -401,8 +402,9 @@ async def fetch_native_configs(
             resp.raise_for_status()
             raw = (await resp.text()).strip()
             userinfo_header = resp.headers.get("Subscription-Userinfo", "")
+            routing_header = resp.headers.get("routing") or resp.headers.get("autorouting") or ""
 
-        userinfo = _parse_userinfo_header(userinfo_header) if userinfo_header else SubUserInfo()
+        userinfo = _parse_userinfo_header(userinfo_header, routing=routing_header) if userinfo_header or routing_header else SubUserInfo()
         if not raw:
             return [], userinfo
         padded = raw + "=" * (-len(raw) % 4)
@@ -440,6 +442,7 @@ async def build_unified_subscription_content(
     total_download = 0
     max_total = 0
     max_expire = 0
+    detected_routing = ""
 
     for res in results:
         if isinstance(res, Exception):
@@ -451,9 +454,11 @@ async def build_unified_subscription_content(
         total_download += info.download
         max_total = max(max_total, info.total)
         max_expire = max(max_expire, info.expire)
+        if info.routing and not detected_routing:
+            detected_routing = info.routing
 
     content = base64.b64encode("\n".join(all_lines).encode("utf-8")).decode("ascii")
-    userinfo = SubUserInfo(upload=total_upload, download=total_download, total=max_total, expire=max_expire)
+    userinfo = SubUserInfo(upload=total_upload, download=total_download, total=max_total, expire=max_expire, routing=detected_routing)
     return content, userinfo
 
 
