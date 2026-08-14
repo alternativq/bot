@@ -387,14 +387,17 @@ def _parse_userinfo_header(value: str) -> SubUserInfo:
     return SubUserInfo(upload=_int("upload"), download=_int("download"), total=_int("total"), expire=_int("expire"))
 
 
-async def fetch_native_configs(sub_id: str, session: aiohttp.ClientSession | None = None) -> tuple[list[str], SubUserInfo]:
+async def fetch_native_configs(
+    sub_id: str, session: aiohttp.ClientSession | None = None, user_agent: str | None = None
+) -> tuple[list[str], SubUserInfo]:
     """Забирает конфиг с нативного /sub/{sub_id} панели."""
     import base64
 
     url = build_subscription_url(sub_id)
+    req_headers = {"User-Agent": user_agent} if user_agent else None
 
     async def _fetch(sess: aiohttp.ClientSession) -> tuple[list[str], SubUserInfo]:
-        async with sess.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+        async with sess.get(url, headers=req_headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
             resp.raise_for_status()
             raw = (await resp.text()).strip()
             userinfo_header = resp.headers.get("Subscription-Userinfo", "")
@@ -415,7 +418,9 @@ async def fetch_native_configs(sub_id: str, session: aiohttp.ClientSession | Non
         return await _fetch(own_session)
 
 
-async def build_unified_subscription_content(sub_ids: dict[int, str]) -> tuple[str, SubUserInfo]:
+async def build_unified_subscription_content(
+    sub_ids: dict[int, str], user_agent: str | None = None
+) -> tuple[str, SubUserInfo]:
     """Склеивает конфиги в одну подписку параллельно (для sub_server.py, если включён)."""
     import base64
     import aiohttp
@@ -426,7 +431,7 @@ async def build_unified_subscription_content(sub_ids: dict[int, str]) -> tuple[s
     connector = aiohttp.TCPConnector(ssl=settings.SUB_FETCH_VERIFY_TLS)
     async with aiohttp.ClientSession(connector=connector) as session:
         fetch_fn = globals()["fetch_native_configs"]
-        tasks = [fetch_fn(sub_id, session=session) for sub_id in sub_ids.values()]
+        tasks = [fetch_fn(sub_id, session=session, user_agent=user_agent) for sub_id in sub_ids.values()]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
 

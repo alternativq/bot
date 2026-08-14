@@ -56,8 +56,9 @@ async def serve_unified_subscription(request: web.Request) -> web.Response:
     if not sub_ids:
         return web.Response(status=404, text="not found")
 
+    user_agent = request.headers.get("User-Agent")
     try:
-        content, userinfo = await xui_client.build_unified_subscription_content(sub_ids)
+        content, userinfo = await xui_client.build_unified_subscription_content(sub_ids, user_agent=user_agent)
     except Exception:
         log.exception("Не удалось собрать единую подписку для токена %s", token)
         return web.Response(status=502, text="upstream error")

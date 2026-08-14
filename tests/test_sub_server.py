@@ -48,7 +48,7 @@ async def main():
         await session.commit()
 
 
-    async def fake_fetch(sub_id: str, session=None):
+    async def fake_fetch(sub_id: str, session=None, **kwargs):
         # разный трафик на разных инбаундах - должен просуммироваться
         if sub_id == "sub-nl":
             return [f"vless://config-for-{sub_id}"], SubUserInfo(upload=100, download=200, total=1000, expire=99999)
