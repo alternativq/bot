@@ -1274,35 +1274,34 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
     if not hmac.compare_digest(sig, expected_sig) or answer != solution_str:
         return _error("Неверный ответ на проверочный вопрос", 400)
 
-    # Проверка IP адреса и Device Token
+    # Проверка IP адреса и Device Token (строго 1 раз за всё время)
     ip_addr = _get_client_ip(request)
     device_token = str(body.get("device_token", "")).strip()
 
     now_utc = utcnow()
-    day_ago = now_utc - dt.timedelta(hours=24)
 
     async with get_session() as session:
-        recent_ip_trials = (await session.scalars(
+        existing_ip_trials = (await session.scalars(
             select(WebTrialSession).where(
-                WebTrialSession.ip_address == ip_addr,
-                WebTrialSession.created_at >= day_ago
+                WebTrialSession.ip_address == ip_addr
             )
         )).all()
 
-        device_trials = []
+        existing_device_trials = []
         if device_token:
-            device_trials = (await session.scalars(
+            existing_device_trials = (await session.scalars(
                 select(WebTrialSession).where(
                     WebTrialSession.public_token == device_token
                 )
             )).all()
 
-        if len(recent_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP or len(device_trials) > 0:
+        if len(existing_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP or len(existing_device_trials) > 0:
             return _error(
-                "С вашего IP-адреса или устройства уже был получен бесплатный период за последние 24 часа. "
-                "Повторное получение пробного ключа недоступно. Воспользуйтесь разделом 'Найти профиль', чтобы загрузить ваш ранее созданный ключ.",
+                "С вашего IP-адреса или устройства уже был ранее получен бесплатный пробный период. "
+                "Повторное получение пробного ключа с одного IP/устройства недоступно. Воспользуйтесь разделом 'Найти профиль', чтобы загрузить ваш ранее созданный ключ.",
                 429
             )
+
 
 
     # Создаём пробную подписку
