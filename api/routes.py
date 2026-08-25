@@ -1177,15 +1177,23 @@ async def get_web_captcha(request: web.Request) -> web.Response:
 
 
 def _get_client_ip(request: web.Request) -> str:
-
-
     real_ip = request.headers.get("X-Real-IP", "").strip()
-    if real_ip:
-        return real_ip
-    forwarded = request.headers.get("X-Forwarded-For", "").strip()
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.remote or "127.0.0.1"
+    if not real_ip:
+        forwarded = request.headers.get("X-Forwarded-For", "").strip()
+        if forwarded:
+            real_ip = forwarded.split(",")[0].strip()
+    if not real_ip:
+        cf_ip = request.headers.get("CF-Connecting-IP", "").strip()
+        if cf_ip:
+            real_ip = cf_ip
+    if not real_ip:
+        real_ip = request.remote or "127.0.0.1"
+
+    if ":" in real_ip and not real_ip.startswith("[") and real_ip.count(":") == 1:
+        real_ip = real_ip.split(":")[0]
+
+    return real_ip.strip()
+
 
 
 async def _find_subscription(session, query_str: str) -> Subscription | None:
@@ -1284,8 +1292,10 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
     if not hmac.compare_digest(sig, expected_sig) or answer != solution_str:
         return _error("Неверный ответ на проверочный вопрос", 400)
 
-    # Проверка IP адреса
+    # Проверка IP адреса и Device Token
     ip_addr = _get_client_ip(request)
+    device_token = str(body.get("device_token", "")).strip()
+
     now_utc = utcnow()
     day_ago = now_utc - dt.timedelta(hours=24)
 
@@ -1297,8 +1307,21 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
             )
         )).all()
 
-        if len(recent_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP:
-            return _error("С вашего IP-адреса уже был получен бесплатный период за последние 24 часа. Повторное получение подписки недоступно.", 429)
+        device_trials = []
+        if device_token:
+            device_trials = (await session.scalars(
+                select(WebTrialSession).where(
+                    WebTrialSession.public_token == device_token
+                )
+            )).all()
+
+        if len(recent_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP or len(device_trials) > 0:
+            return _error(
+                "С вашего IP-адреса или устройства уже был получен бесплатный период за последние 24 часа. "
+                "Повторное получение пробного ключа недоступно. Воспользуйтесь разделом 'Найти профиль', чтобы загрузить ваш ранее созданный ключ.",
+                429
+            )
+
 
     # Создаём пробную подписку
     synthetic_tg_id = -random.randint(100000000, 999999999)

@@ -77,6 +77,9 @@ export function WebPortalPage() {
 
     setLoading(true);
     setError(null);
+    setResult(null);
+
+    const deviceToken = localStorage.getItem('veilora_trial_token') || '';
 
     try {
       const res = await fetch('/api/v1/web/free-trial', {
@@ -85,6 +88,7 @@ export function WebPortalPage() {
         body: JSON.stringify({
           captcha_id: captcha.captcha_id,
           answer: answer.trim(),
+          device_token: deviceToken,
         }),
       });
 
@@ -93,6 +97,9 @@ export function WebPortalPage() {
         throw new Error(data.error || 'Ошибка получения конфигурации');
       }
 
+      if (data.public_token) {
+        localStorage.setItem('veilora_trial_token', data.public_token);
+      }
       setResult(data);
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');
@@ -111,6 +118,7 @@ export function WebPortalPage() {
 
     setLoading(true);
     setError(null);
+    setResult(null);
 
     try {
       const res = await fetch('/api/v1/web/recover', {
@@ -124,6 +132,9 @@ export function WebPortalPage() {
         throw new Error(data.error || 'Профиль не найден');
       }
 
+      if (data.public_token) {
+        localStorage.setItem('veilora_trial_token', data.public_token);
+      }
       setResult(data);
     } catch (err: any) {
       setError(err.message || 'Ошибка восстановления');
@@ -131,6 +142,7 @@ export function WebPortalPage() {
       setLoading(false);
     }
   }
+
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -220,18 +232,41 @@ export function WebPortalPage() {
       {/* ERROR ALERT */}
       {error && (
         <div style={{
-          padding: '12px 16px',
+          padding: '14px 16px',
           background: 'rgba(239, 68, 68, 0.15)',
           border: '1px solid rgba(239, 68, 68, 0.3)',
           borderRadius: 14,
           color: '#f87171',
           fontSize: 13,
           marginBottom: 18,
-          lineHeight: 1.4
+          lineHeight: 1.45
         }}>
-          ⚠️ {error}
+          <div>⚠️ {error}</div>
+          {(error.includes('получен') || error.includes('недоступно')) && (
+            <button
+              onClick={() => {
+                setMode('recover');
+                const saved = localStorage.getItem('veilora_trial_token');
+                if (saved) setRecoverToken(saved);
+              }}
+              style={{
+                marginTop: 10,
+                padding: '8px 14px',
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: 10,
+                color: '#ffffff',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              🔍 Найти ранее созданный профиль
+            </button>
+          )}
         </div>
       )}
+
 
       {/* RESULT VIEW */}
       {result ? (
