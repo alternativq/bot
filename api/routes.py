@@ -1213,9 +1213,6 @@ async def _find_subscription(session, query_str: str) -> Subscription | None:
         elif last.startswith("web_"):
             candidates.append(last[4:])
 
-    if query_str.startswith("@"):
-        candidates.append(query_str.lstrip("@"))
-
     uuids = re.findall(r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}", query_str)
     candidates.extend(uuids)
 
@@ -1229,23 +1226,7 @@ async def _find_subscription(session, query_str: str) -> Subscription | None:
         if sub:
             return sub
 
-    # 2. Search by integer Telegram ID
-    for c in candidates:
-        if c.lstrip("-").isdigit():
-            tg_id_val = int(c)
-            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id_val))
-            if sub:
-                return sub
-
-    # 3. Search by username
-    for c in candidates:
-        db_user = await session.scalar(select(User).where(User.username.ilike(c)))
-        if db_user:
-            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == db_user.tg_id))
-            if sub:
-                return sub
-
-    # 4. Search within xui_sub_ids dict values
+    # 2. Search within xui_sub_ids dict values
     all_subs = (await session.scalars(select(Subscription))).all()
     for sub in all_subs:
         if sub.xui_sub_ids:
@@ -1255,6 +1236,7 @@ async def _find_subscription(session, query_str: str) -> Subscription | None:
                         return sub
 
     return None
+
 
 
 @api_routes.post("/api/v1/web/free-trial")
@@ -1407,13 +1389,14 @@ async def post_web_recover(request: web.Request) -> web.Response:
 
     raw_token = str(body.get("token", "")).strip()
     if not raw_token:
-        return _error("Укажите токен, ссылку или имя пользователя")
+        return _error("Укажите токен или ссылку подписки")
 
     async with get_session() as session:
         sub = await _find_subscription(session, raw_token)
 
     if sub is None:
-        return _error("Профиль с таким токеном, ссылкой или именем не найден", 404)
+        return _error("Профиль с таким токеном или ссылкой не найден", 404)
+
 
     sub_id = next(iter((sub.xui_sub_ids or {}).values()), None)
     if settings.unified_subscription_enabled:

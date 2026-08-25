@@ -56,7 +56,6 @@ export function WebPortalPage() {
 
   async function fetchCaptcha() {
     try {
-      setError(null);
       const res = await fetch('/api/v1/web/captcha');
       if (res.ok) {
         const data = await res.json();
@@ -551,13 +550,13 @@ export function WebPortalPage() {
             Поиск профиля
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px', lineHeight: 1.45 }}>
-            Введите токен, полную ссылку подписки или имя пользователя Telegram (@username) для загрузки настроек.
+            Введите токен или ссылку вашей подписки для загрузки настроек.
           </p>
 
           <form onSubmit={handleRecover}>
             <input
               type="text"
-              placeholder="Токен, ссылка подписки или @username"
+              placeholder="Токен или ссылка подписки"
               value={recoverToken}
               onChange={(e) => setRecoverToken(e.target.value)}
 
@@ -598,26 +597,9 @@ export function WebPortalPage() {
       {/* DOWNLOAD APPS GUIDE */}
       <div style={{ marginTop: 24 }}>
         <h4 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          📱 Поддерживаемые клиенты
+          📱 Поддерживаемые клиенты (Android)
         </h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <a
-            href="https://apps.apple.com/app/happ-proxy-utility/id6504287928"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 14,
-              padding: 12,
-              color: '#fff',
-              textDecoration: 'none',
-              fontSize: 12,
-              fontWeight: 600
-            }}
-          >
-            🍎 <strong>Happ App</strong> (iOS / Mac)
-          </a>
           <a
             href="https://play.google.com/store/apps/details?id=com.v2raytun.android"
             target="_blank"
@@ -634,6 +616,23 @@ export function WebPortalPage() {
             }}
           >
             🤖 <strong>v2raytun</strong> (Android)
+          </a>
+          <a
+            href="https://play.google.com/store/apps/details?id=com.happproxy"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: 12,
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: 12,
+              fontWeight: 600
+            }}
+          >
+            🤖 <strong>Happ App</strong> (Android)
           </a>
         </div>
       </div>
