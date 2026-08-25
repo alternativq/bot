@@ -1223,7 +1223,7 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
         )).all()
 
         if len(recent_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP:
-            return _error("С вашего IP-адреса уже запрашивался бесплатный период за последние 24 часа", 429)
+            return _error("С вашего IP-адреса уже был получен бесплатный период за последние 24 часа. Вы можете найти ранее созданный профиль или открыть Telegram-бот.", 429)
 
     # Создаём пробную подписку
     synthetic_tg_id = -random.randint(100000000, 999999999)
@@ -1284,8 +1284,9 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf)
     qr_base64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
 
     return _json({
         "public_token": public_token,
@@ -1301,21 +1302,48 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
 
 @api_routes.post("/api/v1/web/recover")
 async def post_web_recover(request: web.Request) -> web.Response:
-    """Восстановление ссылок подписки по публичному токену или коду."""
+    """Восстановление ссылок подписки по токену, ссылке, юзернейму или ID."""
     try:
         body = await request.json()
     except Exception:
         return _error("Invalid JSON")
 
-    token = str(body.get("token", "")).strip()
-    if not token:
-        return _error("Укажите токен или код подписки")
+    raw_token = str(body.get("token", "")).strip()
+    if not raw_token:
+        return _error("Укажите токен, ссылку или имя пользователя")
+
+    # Умная очистка токена из ссылки
+    cleaned = raw_token
+    if "http://" in cleaned or "https://" in cleaned:
+        cleaned = cleaned.split("?")[0].rstrip("/")
+        cleaned = cleaned.split("/")[-1]
+
+    if "start=web_" in cleaned:
+        cleaned = cleaned.split("start=web_")[-1]
+    elif cleaned.startswith("web_"):
+        cleaned = cleaned[4:]
+
+    cleaned = cleaned.strip().lstrip("@")
 
     async with get_session() as session:
-        sub = await session.scalar(select(Subscription).where(Subscription.public_token == token))
+        # 1. Поиск по публичному токену
+        sub = await session.scalar(select(Subscription).where(Subscription.public_token == cleaned))
+        if sub is None and raw_token != cleaned:
+            sub = await session.scalar(select(Subscription).where(Subscription.public_token == raw_token))
+
+        # 2. Поиск по Telegram ID (если введено число)
+        if sub is None and cleaned.lstrip("-").isdigit():
+            tg_id_val = int(cleaned)
+            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id_val))
+
+        # 3. Поиск по Username
+        if sub is None and cleaned:
+            db_user = await session.scalar(select(User).where(User.username.ilike(cleaned)))
+            if db_user:
+                sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == db_user.tg_id))
 
     if sub is None:
-        return _error("Подписка с таким токеном не найдена", 404)
+        return _error("Профиль с таким токеном, ссылкой или именем не найден", 404)
 
     sub_id = next(iter((sub.xui_sub_ids or {}).values()), None)
     if settings.unified_subscription_enabled:
@@ -1334,8 +1362,9 @@ async def post_web_recover(request: web.Request) -> web.Response:
     qr.make(fit=True)
     img = qr.make_image(fill_color="black", back_color="white")
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf)
     qr_base64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
 
     return _json({
         "public_token": sub.public_token,
@@ -1347,4 +1376,5 @@ async def post_web_recover(request: web.Request) -> web.Response:
         "period_end": sub.period_end.isoformat(),
         "is_active": sub.is_active(),
     })
+
 

@@ -138,7 +138,7 @@ export function WebPortalPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const brandName = config?.brand_name || 'Veilora Network';
+  const brandName = 'Veilora';
 
   return (
     <div className="page" style={{ paddingTop: 24, paddingBottom: 40 }}>
@@ -162,6 +162,7 @@ export function WebPortalPage() {
         <h1 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 6px', color: '#ffffff' }}>
           {brandName}
         </h1>
+
         <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, padding: '0 12px' }}>
           Персональный протокол высокой скорости и защиты сетевого соединения
         </p>
@@ -513,15 +514,16 @@ export function WebPortalPage() {
             Поиск профиля
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px', lineHeight: 1.45 }}>
-            Введите токен конфигурации или ранее сохранённый код для загрузки настроек.
+            Введите токен, полную ссылку подписки или имя пользователя Telegram (@username) для загрузки настроек.
           </p>
 
           <form onSubmit={handleRecover}>
             <input
               type="text"
-              placeholder="Введите токен конфигурации"
+              placeholder="Токен, ссылка подписки или @username"
               value={recoverToken}
               onChange={(e) => setRecoverToken(e.target.value)}
+
               style={{
                 width: '100%',
                 background: 'rgba(0, 0, 0, 0.35)',
