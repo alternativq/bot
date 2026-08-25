@@ -138,7 +138,9 @@ export function WebPortalPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const brandName = 'Veilora';
+  const rawBrand = config?.brand_name || 'Veilora';
+  const brandName = rawBrand.replace(/VPN/gi, '').trim() || 'Veilora';
+
 
   return (
     <div className="page" style={{ paddingTop: 24, paddingBottom: 40 }}>
