@@ -1099,6 +1099,8 @@ async def admin_broadcast(request: web.Request) -> web.Response:
     else:
         formatted_text = f"<b>📢 УВЕДОМЛЕНИЕ ОТ VEILORAVPN</b>\n────────────────────────\n\n{message_text}"
 
+
+
     bot = request.app.get("bot")
     if not bot:
         return _error("Bot not configured")
@@ -1174,6 +1176,79 @@ async def get_web_captcha(request: web.Request) -> web.Response:
     })
 
 
+def _get_client_ip(request: web.Request) -> str:
+
+
+    real_ip = request.headers.get("X-Real-IP", "").strip()
+    if real_ip:
+        return real_ip
+    forwarded = request.headers.get("X-Forwarded-For", "").strip()
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote or "127.0.0.1"
+
+
+async def _find_subscription(session, query_str: str) -> Subscription | None:
+    query_str = query_str.strip()
+    if not query_str:
+        return None
+
+    import re
+    candidates = [query_str]
+
+    cleaned = query_str.split("?")[0].rstrip("/")
+    if "/" in cleaned:
+        last = cleaned.split("/")[-1]
+        candidates.append(last)
+        if "start=web_" in last:
+            candidates.append(last.split("start=web_")[-1])
+        elif last.startswith("web_"):
+            candidates.append(last[4:])
+
+    if query_str.startswith("@"):
+        candidates.append(query_str.lstrip("@"))
+
+    uuids = re.findall(r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}", query_str)
+    candidates.extend(uuids)
+
+    # 1. Search by public_token or xui_uuid
+    for c in candidates:
+        sub = await session.scalar(
+            select(Subscription).where(
+                (Subscription.public_token == c) | (Subscription.xui_uuid == c)
+            )
+        )
+        if sub:
+            return sub
+
+    # 2. Search by integer Telegram ID
+    for c in candidates:
+        if c.lstrip("-").isdigit():
+            tg_id_val = int(c)
+            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id_val))
+            if sub:
+                return sub
+
+    # 3. Search by username
+    for c in candidates:
+        db_user = await session.scalar(select(User).where(User.username.ilike(c)))
+        if db_user:
+            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == db_user.tg_id))
+            if sub:
+                return sub
+
+    # 4. Search within xui_sub_ids dict values
+    all_subs = (await session.scalars(select(Subscription))).all()
+    for sub in all_subs:
+        if sub.xui_sub_ids:
+            for sub_id_val in sub.xui_sub_ids.values():
+                for c in candidates:
+                    if str(sub_id_val) == c:
+                        return sub
+
+    return None
+
+
 @api_routes.post("/api/v1/web/free-trial")
 async def post_web_free_trial(request: web.Request) -> web.Response:
     """Выдача бесплатного пробного VPN ключа через веб-сайт."""
@@ -1210,7 +1285,7 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
         return _error("Неверный ответ на проверочный вопрос", 400)
 
     # Проверка IP адреса
-    ip_addr = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote or "127.0.0.1"
+    ip_addr = _get_client_ip(request)
     now_utc = utcnow()
     day_ago = now_utc - dt.timedelta(hours=24)
 
@@ -1223,7 +1298,7 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
         )).all()
 
         if len(recent_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP:
-            return _error("С вашего IP-адреса уже был получен бесплатный период за последние 24 часа. Вы можете найти ранее созданный профиль или открыть Telegram-бот.", 429)
+            return _error("С вашего IP-адреса уже был получен бесплатный период за последние 24 часа. Повторное получение подписки недоступно.", 429)
 
     # Создаём пробную подписку
     synthetic_tg_id = -random.randint(100000000, 999999999)
@@ -1287,7 +1362,6 @@ async def post_web_free_trial(request: web.Request) -> web.Response:
     img.save(buf)
     qr_base64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
-
     return _json({
         "public_token": public_token,
         "sub_link": sub_link,
@@ -1312,35 +1386,8 @@ async def post_web_recover(request: web.Request) -> web.Response:
     if not raw_token:
         return _error("Укажите токен, ссылку или имя пользователя")
 
-    # Умная очистка токена из ссылки
-    cleaned = raw_token
-    if "http://" in cleaned or "https://" in cleaned:
-        cleaned = cleaned.split("?")[0].rstrip("/")
-        cleaned = cleaned.split("/")[-1]
-
-    if "start=web_" in cleaned:
-        cleaned = cleaned.split("start=web_")[-1]
-    elif cleaned.startswith("web_"):
-        cleaned = cleaned[4:]
-
-    cleaned = cleaned.strip().lstrip("@")
-
     async with get_session() as session:
-        # 1. Поиск по публичному токену
-        sub = await session.scalar(select(Subscription).where(Subscription.public_token == cleaned))
-        if sub is None and raw_token != cleaned:
-            sub = await session.scalar(select(Subscription).where(Subscription.public_token == raw_token))
-
-        # 2. Поиск по Telegram ID (если введено число)
-        if sub is None and cleaned.lstrip("-").isdigit():
-            tg_id_val = int(cleaned)
-            sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == tg_id_val))
-
-        # 3. Поиск по Username
-        if sub is None and cleaned:
-            db_user = await session.scalar(select(User).where(User.username.ilike(cleaned)))
-            if db_user:
-                sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == db_user.tg_id))
+        sub = await _find_subscription(session, raw_token)
 
     if sub is None:
         return _error("Профиль с таким токеном, ссылкой или именем не найден", 404)
@@ -1365,7 +1412,6 @@ async def post_web_recover(request: web.Request) -> web.Response:
     img.save(buf)
     qr_base64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
-
     return _json({
         "public_token": sub.public_token,
         "sub_link": sub_link,
@@ -1376,5 +1422,6 @@ async def post_web_recover(request: web.Request) -> web.Response:
         "period_end": sub.period_end.isoformat(),
         "is_active": sub.is_active(),
     })
+
 
 
