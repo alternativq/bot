@@ -20,7 +20,8 @@ PUBLIC_PATHS = frozenset({
 
 
 def is_public(path: str) -> bool:
-    return path in PUBLIC_PATHS
+    return path in PUBLIC_PATHS or path.startswith("/api/v1/web/")
+
 
 
 @web.middleware

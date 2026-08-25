@@ -12,6 +12,7 @@ const PlansPage = lazy(() => import('./pages/PlansPage').then((m) => ({ default:
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage').then((m) => ({ default: m.SubscriptionPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+const WebPortalPage = lazy(() => import('./pages/WebPortalPage').then((m) => ({ default: m.WebPortalPage })));
 
 export type Page =
   | 'home'
@@ -63,19 +64,19 @@ export default function App() {
     setPage('payment');
   };
 
-  // Stub for regular browsers
+  // Web Emergency Access Portal for regular browsers outside Telegram
   if (isTelegram === false) {
     return (
-      <div style={stubStyles.container}>
-        <div style={stubStyles.card}>
-          <h2 style={stubStyles.title}>Технические работы</h2>
-          <p style={stubStyles.text}>
-            Данный ресурс недоступен для прямого просмотра.
-          </p>
+      <Suspense fallback={
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Загрузка Веб-портала VeiloraVPN...
         </div>
-      </div>
+      }>
+        <WebPortalPage />
+      </Suspense>
     );
   }
+
 
   // Skeleton loading screen during initial Telegram initData check
   if (isTelegram === null) {
@@ -148,34 +149,3 @@ export default function App() {
   );
 }
 
-const stubStyles = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    backgroundColor: '#070812',
-    padding: 20,
-    fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
-  },
-  card: {
-    backgroundColor: 'rgba(18, 20, 38, 0.9)',
-    padding: 32,
-    borderRadius: 20,
-    border: '1px solid rgba(255,255,255,0.08)',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-    textAlign: 'center' as const,
-    maxWidth: 400,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: '#f1f5f9',
-    marginBottom: 8,
-  },
-  text: {
-    fontSize: 14,
-    color: '#8b92b2',
-    lineHeight: '1.5',
-  },
-};

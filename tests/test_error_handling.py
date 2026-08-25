@@ -82,7 +82,8 @@ async def main():
             async with get_session() as session:
                 session.add(User(tg_id=888))
                 await session.flush()
-                pending = PendingPayment(user_tg_id=888, plan_id="m1", method_id="ozon", order_code="FAIL01")
+                pending = PendingPayment(user_tg_id=888, plan_id="m1", method_id="ozon", order_code="FAIL01", status="pending")
+
                 session.add(pending)
                 await session.commit()
                 pending_id = pending.id

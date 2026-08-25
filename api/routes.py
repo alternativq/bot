@@ -1131,3 +1131,220 @@ async def admin_broadcast(request: web.Request) -> web.Response:
         "failed_count": failed_count,
         "total": len(users),
     })
+
+
+# ──────────────────────────────────────────────────────────────
+# WEB PORTAL / EMERGENCY TRIAL ENDPOINTS (NO VPN ACCESS)
+# ──────────────────────────────────────────────────────────────
+
+import hmac
+import hashlib
+import time
+import secrets
+import datetime as dt
+from db.models import WebTrialSession, User, Subscription, PaymentRecord
+
+
+@api_routes.get("/api/v1/web/config")
+async def get_web_config(request: web.Request) -> web.Response:
+    """Общая публичная конфигурация для веб-портала (без авторизации)."""
+    return _json({
+        "brand_name": settings.BRAND_NAME,
+        "bot_username": settings.BOT_USERNAME,
+        "web_trial_enabled": settings.WEB_TRIAL_ENABLED and settings.TRIAL_ENABLED,
+        "trial_duration_days": settings.TRIAL_DURATION_DAYS,
+    })
+
+
+@api_routes.get("/api/v1/web/captcha")
+async def get_web_captcha(request: web.Request) -> web.Response:
+    """Генерация легкой капчи (математического примера) для защиты от ботов."""
+    num1 = random.randint(1, 9)
+    num2 = random.randint(1, 9)
+    solution = num1 + num2
+    timestamp = int(time.time())
+    secret_key = settings.JWT_SECRET or settings.BOT_TOKEN or "default_secret"
+    raw_str = f"{solution}:{timestamp}"
+    sig = hmac.new(secret_key.encode("utf-8"), raw_str.encode("utf-8"), hashlib.sha256).hexdigest()
+    captcha_id = f"{solution}:{timestamp}:{sig}"
+
+    return _json({
+        "captcha_id": captcha_id,
+        "question": f"Сколько будет {num1} + {num2}?",
+    })
+
+
+@api_routes.post("/api/v1/web/free-trial")
+async def post_web_free_trial(request: web.Request) -> web.Response:
+    """Выдача бесплатного пробного VPN ключа через веб-сайт."""
+    if not settings.WEB_TRIAL_ENABLED or not settings.TRIAL_ENABLED:
+        return _error("Выдача пробного периода на сайте временно отключена", 403)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return _error("Invalid JSON")
+
+    captcha_id = str(body.get("captcha_id", ""))
+    answer = str(body.get("answer", "")).strip()
+
+    if not captcha_id or not answer:
+        return _error("Заполните проверочный ответ (капчу)")
+
+    # Проверка капчи
+    parts = captcha_id.split(":")
+    if len(parts) != 3:
+        return _error("Невалидная капча", 400)
+
+    solution_str, ts_str, sig = parts
+    try:
+        ts = int(ts_str)
+        if time.time() - ts > 600:  # 10 минут
+            return _error("Срок действия капчи истёк, попробуйте снова", 400)
+    except ValueError:
+        return _error("Невалидная капча", 400)
+
+    secret_key = settings.JWT_SECRET or settings.BOT_TOKEN or "default_secret"
+    expected_sig = hmac.new(secret_key.encode("utf-8"), f"{solution_str}:{ts_str}".encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, expected_sig) or answer != solution_str:
+        return _error("Неверный ответ на проверочный вопрос", 400)
+
+    # Проверка IP адреса
+    ip_addr = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote or "127.0.0.1"
+    now_utc = utcnow()
+    day_ago = now_utc - dt.timedelta(hours=24)
+
+    async with get_session() as session:
+        recent_ip_trials = (await session.scalars(
+            select(WebTrialSession).where(
+                WebTrialSession.ip_address == ip_addr,
+                WebTrialSession.created_at >= day_ago
+            )
+        )).all()
+
+        if len(recent_ip_trials) >= settings.WEB_TRIAL_MAX_PER_IP:
+            return _error("С вашего IP-адреса уже запрашивался бесплатный период за последние 24 часа", 429)
+
+    # Создаём пробную подписку
+    synthetic_tg_id = -random.randint(100000000, 999999999)
+    period_end = now_utc + dt.timedelta(days=settings.TRIAL_DURATION_DAYS)
+
+    try:
+        client_uuid, inbound_id, sub_id = await xui_client.provision_client(
+            tg_id=synthetic_tg_id,
+            period_end=period_end,
+            total_gb=TRIAL_PLAN.total_gb,
+            limit_ip=TRIAL_PLAN.limit_ip,
+            flow=TRIAL_PLAN.flow,
+        )
+    except Exception:
+        log.exception("Не удалось создать клиента в 3X-UI для веб-пробника")
+        return _error("Ошибка панели 3X-UI при создании ключа. Попробуйте позже.", 502)
+
+    public_token = secrets.token_urlsafe(24)
+    async with get_session() as session:
+        session.add(User(tg_id=synthetic_tg_id, trial_used=True))
+        await session.flush()
+        sub = Subscription(
+            user_tg_id=synthetic_tg_id,
+            plan_id=TRIAL_PLAN.id,
+            xui_uuid=client_uuid,
+            xui_sub_ids={str(inbound_id): sub_id},
+            public_token=public_token,
+            period_end=period_end,
+        )
+        session.add(sub)
+
+        session.add(PaymentRecord(
+            external_id=f"web_trial:{synthetic_tg_id}",
+            provider="web_trial",
+            user_tg_id=synthetic_tg_id,
+            plan_id=TRIAL_PLAN.id,
+            amount_rub=0,
+        ))
+        session.add(WebTrialSession(
+            ip_address=ip_addr,
+            public_token=public_token,
+        ))
+        await session.commit()
+
+    # Формируем ссылки
+    if settings.unified_subscription_enabled:
+        sub_link = f"{settings.PUBLIC_SUB_BASE_URL.rstrip('/')}/{public_token}"
+    else:
+        sub_link = xui_client.build_subscription_url(sub_id)
+
+    happ_link = f"happ://{sub_link.replace('https://', '').replace('http://', '')}"
+    v2raytun_link = f"v2raytun://{sub_link.replace('https://', '').replace('http://', '')}"
+    tg_bot_link = f"https://t.me/{settings.BOT_USERNAME}?start=web_{public_token}" if settings.BOT_USERNAME else ""
+
+    # Генерация QR кода
+    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr.add_data(sub_link)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_base64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+    return _json({
+        "public_token": public_token,
+        "sub_link": sub_link,
+        "happ_link": happ_link,
+        "v2raytun_link": v2raytun_link,
+        "tg_link": tg_bot_link,
+        "qr_code": qr_base64,
+        "period_end": period_end.isoformat(),
+        "duration_days": settings.TRIAL_DURATION_DAYS,
+    })
+
+
+@api_routes.post("/api/v1/web/recover")
+async def post_web_recover(request: web.Request) -> web.Response:
+    """Восстановление ссылок подписки по публичному токену или коду."""
+    try:
+        body = await request.json()
+    except Exception:
+        return _error("Invalid JSON")
+
+    token = str(body.get("token", "")).strip()
+    if not token:
+        return _error("Укажите токен или код подписки")
+
+    async with get_session() as session:
+        sub = await session.scalar(select(Subscription).where(Subscription.public_token == token))
+
+    if sub is None:
+        return _error("Подписка с таким токеном не найдена", 404)
+
+    sub_id = next(iter((sub.xui_sub_ids or {}).values()), None)
+    if settings.unified_subscription_enabled:
+        sub_link = f"{settings.PUBLIC_SUB_BASE_URL.rstrip('/')}/{sub.public_token}"
+    elif sub_id:
+        sub_link = xui_client.build_subscription_url(sub_id)
+    else:
+        return _error("Конфигурация подписки недоступна", 404)
+
+    happ_link = f"happ://{sub_link.replace('https://', '').replace('http://', '')}"
+    v2raytun_link = f"v2raytun://{sub_link.replace('https://', '').replace('http://', '')}"
+    tg_bot_link = f"https://t.me/{settings.BOT_USERNAME}?start=web_{sub.public_token}" if settings.BOT_USERNAME else ""
+
+    qr = qrcode.QRCode(version=1, box_size=8, border=2)
+    qr.add_data(sub_link)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_base64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+    return _json({
+        "public_token": sub.public_token,
+        "sub_link": sub_link,
+        "happ_link": happ_link,
+        "v2raytun_link": v2raytun_link,
+        "tg_link": tg_bot_link,
+        "qr_code": qr_base64,
+        "period_end": sub.period_end.isoformat(),
+        "is_active": sub.is_active(),
+    })
+

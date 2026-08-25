@@ -35,22 +35,52 @@ async def _send_miniapp_prompt(message: Message, custom_text: str | None = None)
 
 @router.message(Command("start"))
 async def cmd_start(message: Message, command: CommandObject | None = None) -> None:
+    web_linked_text = None
     if command and command.args:
-        ref_code = command.args.strip()
-        if ref_code:
+        args_str = command.args.strip()
+        if args_str.startswith("web_"):
+            token_part = args_str[4:]
             try:
-                await apply_code(message.from_user.id, ref_code)
+                async with get_session() as session:
+                    from db.models import WebTrialSession
+                    sub = await session.scalar(select(Subscription).where(Subscription.public_token == token_part))
+                    web_session = await session.scalar(select(WebTrialSession).where(WebTrialSession.public_token == token_part))
+                    if sub:
+                        user_id = message.from_user.id
+                        db_user = await session.get(User, user_id)
+                        if db_user is None:
+                            db_user = User(tg_id=user_id, username=message.from_user.username)
+                            session.add(db_user)
+
+                        # If sub is assigned to synthetic ID or someone else and not claimed yet
+                        existing_sub = await session.scalar(select(Subscription).where(Subscription.user_tg_id == user_id))
+                        if existing_sub and existing_sub.id != sub.id:
+                            # User already has another active sub in telegram
+                            web_linked_text = "ℹ️ Ваш Telegram-аккаунт уже зарегистрирован в системе. Ваша существующая подписка активна!"
+                        else:
+                            sub.user_tg_id = user_id
+                            db_user.trial_used = True
+                            if web_session:
+                                web_session.claimed_by_tg_id = user_id
+                            await session.commit()
+                            web_linked_text = "🎉 **Ваш пробный VPN с сайта успешно привязан к вашему аккаунту Telegram!**\nТеперь вы можете управлять подпиской и продлевать ее в нашем боте."
+            except Exception:
+                log.exception("Ошибка при привязке токена подписки с сайта")
+        elif args_str:
+            try:
+                await apply_code(message.from_user.id, args_str)
             except Exception:
                 log.exception("Ошибка при применении реферального кода")
 
     await message.answer(
-        texts.WELCOME,
+        web_linked_text or texts.WELCOME,
         reply_markup=ReplyKeyboardRemove(),
     )
     await message.answer(
         "👇 Открыть личный кабинет и каталог:",
         reply_markup=keyboards.open_app_keyboard(),
     )
+
 
 
 @router.message(Command("help"))

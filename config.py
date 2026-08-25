@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     TRIAL_ENABLED: bool = True
     TRIAL_DURATION_DAYS: int = 2
     MAX_SUBSCRIPTION_DAYS: int = 100
+    WEB_TRIAL_ENABLED: bool = True
+    WEB_TRIAL_MAX_PER_IP: int = 1
+
 
     @property
     def admin_ids(self) -> list[int]:

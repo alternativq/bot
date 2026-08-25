@@ -146,3 +146,14 @@ class Referral(Base):
     referred_tg_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.tg_id"), index=True)
     reward_granted: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)
+
+
+class WebTrialSession(Base):
+    __tablename__ = "web_trial_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ip_address: Mapped[str] = mapped_column(String(64), index=True)
+    public_token: Mapped[str] = mapped_column(String(48), unique=True, index=True)
+    claimed_by_tg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
+    created_at: Mapped[dt.datetime] = mapped_column(UTCDateTime, default=utcnow)
+
