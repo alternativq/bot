@@ -39,24 +39,41 @@ export default function App() {
     async function initAuth() {
       try {
         const tg = (window as any).Telegram?.WebApp;
-        const initData = tg?.initData;
-        if (initData && typeof initData === 'string' && initData.trim().length > 0) {
-          setIsTelegram(true);
+        if (tg) {
           try {
-            if (!getAuthToken()) {
-              const { token } = await authenticate(initData);
-              setAuthToken(token);
+            tg.ready();
+            tg.expand();
+          } catch (e) {}
+        }
+
+        const initData = tg?.initData || '';
+        const isTelegramEnv = Boolean(
+          tg &&
+          (initData.length > 0 ||
+           tg.initDataUnsafe?.user ||
+           (tg.platform && tg.platform !== 'unknown') ||
+           window.name?.includes('tgWebAppData'))
+        );
+
+        if (isTelegramEnv) {
+          setIsTelegram(true);
+          if (initData) {
+            try {
+              if (!getAuthToken()) {
+                const { token } = await authenticate(initData);
+                setAuthToken(token);
+              }
+              const userProfile = await getMe();
+              setProfile(userProfile);
+            } catch (err) {
+              console.error('Auth initialization error:', err);
             }
-            const userProfile = await getMe();
-            setProfile(userProfile);
-          } catch (err) {
-            console.error('Auth initialization error:', err);
           }
         } else {
           setIsTelegram(false);
         }
       } catch (err) {
-        console.error('Fallback to web portal:', err);
+        console.error('Fallback error:', err);
         setIsTelegram(false);
       }
     }
