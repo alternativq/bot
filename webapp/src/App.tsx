@@ -5,6 +5,8 @@ import { HomePage } from './pages/HomePage';
 import { authenticate, getAuthToken, setAuthToken, getMe } from './api/client';
 import type { UserProfile } from './types';
 
+import { WebPortalPage } from './pages/WebPortalPage';
+
 const FAQPage = lazy(() => import('./pages/FAQPage').then((m) => ({ default: m.FAQPage })));
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
 const PaymentPage = lazy(() => import('./pages/PaymentPage').then((m) => ({ default: m.PaymentPage })));
@@ -12,7 +14,6 @@ const PlansPage = lazy(() => import('./pages/PlansPage').then((m) => ({ default:
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage').then((m) => ({ default: m.SubscriptionPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
-const WebPortalPage = lazy(() => import('./pages/WebPortalPage').then((m) => ({ default: m.WebPortalPage })));
 
 export type Page =
   | 'home'
@@ -89,15 +90,7 @@ export default function App() {
 
   // Web Emergency Access Portal for regular browsers outside Telegram
   if (isTelegram === false) {
-    return (
-      <Suspense fallback={
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-secondary)' }}>
-          Загрузка Веб-портала VeiloraVPN...
-        </div>
-      }>
-        <WebPortalPage />
-      </Suspense>
-    );
+    return <WebPortalPage />;
   }
 
 
