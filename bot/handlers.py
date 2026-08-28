@@ -197,7 +197,10 @@ async def _send_admin_card(target: Message, tg_id: int) -> None:
         period_end = sub.period_end
         username = user.username if user else None
 
-    upload, download = await xui_client.get_client_traffic(tg_id)
+    try:
+        upload, download = await xui_client.get_client_traffic(tg_id)
+    except Exception:
+        upload, download = 0, 0
     referral_code = await ensure_referral_code(tg_id)
     promo_stats = await get_promo_stats()
     stats_text = f"кодов: {promo_stats['codes']}, рефералов: {promo_stats['referrals']}"

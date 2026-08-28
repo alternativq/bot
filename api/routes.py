@@ -462,7 +462,11 @@ async def get_subscription(request: web.Request) -> web.Response:
         sub_link = None
 
     # Трафик
-    upload, download = await xui_client.get_client_traffic(tg_id)
+    try:
+        upload, download = await xui_client.get_client_traffic(tg_id)
+    except Exception:
+        log.warning("Не удалось получить трафик для tg_id=%s", tg_id)
+        upload, download = 0, 0
 
     import datetime as dt
     days_left = max(0, (sub.period_end - dt.datetime.now(dt.timezone.utc)).days) if active else 0
@@ -692,7 +696,11 @@ async def admin_get_user(request: web.Request) -> web.Response:
 
     plan = get_plan(sub.plan_id) if sub else None
     active = sub.is_active() if sub else False
-    upload, download = await xui_client.get_client_traffic(target_tg_id)
+    try:
+        upload, download = await xui_client.get_client_traffic(target_tg_id)
+    except Exception:
+        log.warning("Не удалось получить трафик админа для target_tg_id=%s", target_tg_id)
+        upload, download = 0, 0
 
     inbounds = []
     try:
