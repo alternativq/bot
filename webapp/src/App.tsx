@@ -37,20 +37,26 @@ export default function App() {
 
   useEffect(() => {
     async function initAuth() {
-      const tg = window.Telegram?.WebApp;
-      if (tg && tg.initData && tg.initData.length > 0) {
-        setIsTelegram(true);
-        try {
-          if (!getAuthToken()) {
-            const { token } = await authenticate(tg.initData);
-            setAuthToken(token);
+      try {
+        const tg = (window as any).Telegram?.WebApp;
+        const initData = tg?.initData;
+        if (initData && typeof initData === 'string' && initData.trim().length > 0) {
+          setIsTelegram(true);
+          try {
+            if (!getAuthToken()) {
+              const { token } = await authenticate(initData);
+              setAuthToken(token);
+            }
+            const userProfile = await getMe();
+            setProfile(userProfile);
+          } catch (err) {
+            console.error('Auth initialization error:', err);
           }
-          const userProfile = await getMe();
-          setProfile(userProfile);
-        } catch (err) {
-          console.error('Auth initialization error:', err);
+        } else {
+          setIsTelegram(false);
         }
-      } else {
+      } catch (err) {
+        console.error('Fallback to web portal:', err);
         setIsTelegram(false);
       }
     }

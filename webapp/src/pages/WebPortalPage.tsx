@@ -23,6 +23,20 @@ interface TrialResult {
   duration_days: number;
 }
 
+const safeGetStorage = (key: string): string => {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+};
+
+const safeSetStorage = (key: string, val: string) => {
+  try {
+    localStorage.setItem(key, val);
+  } catch {}
+};
+
 export function WebPortalPage() {
   const [config, setConfig] = useState<WebConfig | null>(null);
   const [captcha, setCaptcha] = useState<CaptchaData | null>(null);
@@ -41,12 +55,12 @@ export function WebPortalPage() {
 
   // Pro / Simple Mode Switcher (default: false -> Simple mode)
   const [isAdvanced, setIsAdvanced] = useState<boolean>(() => {
-    return localStorage.getItem('veilora_web_mode') === 'advanced';
+    return safeGetStorage('veilora_web_mode') === 'advanced';
   });
 
   const toggleMode = (advanced: boolean) => {
     setIsAdvanced(advanced);
-    localStorage.setItem('veilora_web_mode', advanced ? 'advanced' : 'simple');
+    safeSetStorage('veilora_web_mode', advanced ? 'advanced' : 'simple');
   };
 
   useEffect(() => {
@@ -90,7 +104,7 @@ export function WebPortalPage() {
     setError(null);
     setResult(null);
 
-    const deviceToken = localStorage.getItem('veilora_trial_token') || '';
+    const deviceToken = safeGetStorage('veilora_trial_token');
 
     try {
       const res = await fetch('/api/v1/web/free-trial', {
@@ -109,7 +123,7 @@ export function WebPortalPage() {
       }
 
       if (data.public_token) {
-        localStorage.setItem('veilora_trial_token', data.public_token);
+        safeSetStorage('veilora_trial_token', data.public_token);
       }
       setResult(data);
     } catch (err: any) {
@@ -144,7 +158,7 @@ export function WebPortalPage() {
       }
 
       if (data.public_token) {
-        localStorage.setItem('veilora_trial_token', data.public_token);
+        safeSetStorage('veilora_trial_token', data.public_token);
       }
       setResult(data);
     } catch (err: any) {
@@ -352,7 +366,7 @@ export function WebPortalPage() {
             <button
               onClick={() => {
                 setMode('recover');
-                const saved = localStorage.getItem('veilora_trial_token');
+                const saved = safeGetStorage('veilora_trial_token');
                 if (saved) setRecoverToken(saved);
               }}
               style={{
