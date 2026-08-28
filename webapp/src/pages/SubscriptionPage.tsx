@@ -79,7 +79,7 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
   }, [haptic, qrData, showQR, showToast]);
 
   const handleDownloadApp = useCallback(
-    (app: 'happ' | 'v2raytun') => {
+    (app: 'happ' | 'incy' | 'v2raytun') => {
       haptic('medium');
       const isIos = tg?.platform === 'ios' || /iphone|ipad|ipod/i.test(navigator.userAgent);
       const isAndroid = tg?.platform === 'android' || /android/i.test(navigator.userAgent);
@@ -89,6 +89,8 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
         if (isIos) url = 'https://apps.apple.com/app/id6504287215';
         else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy';
         else url = 'https://happ.su/';
+      } else if (app === 'incy') {
+        url = 'https://apps.apple.com/app/id6478950800';
       } else if (app === 'v2raytun') {
         if (isIos) url = 'https://apps.apple.com/app/id6476628951';
         else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
@@ -296,6 +298,47 @@ export function SubscriptionPage({ navigate }: SubscriptionPageProps) {
               }}
             >
               <Copy size={14} /> Скопировать ключ для Happ
+            </button>
+          </div>
+        </div>
+
+        {/* App 2: Incy (iOS App Store) - 2nd PLACE */}
+        <div className="card" style={{ padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255, 255, 255, 0.12)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                🍎
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 850, color: '#ffffff' }}>Incy</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>iOS (App Store)</div>
+              </div>
+            </div>
+            <span className="noir-badge noir-badge-dark" style={{ color: '#c084fc', border: '1px solid rgba(192, 132, 252, 0.3)' }}>APP STORE</span>
+          </div>
+
+          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.45 }}>
+            1. Установите <strong>Incy</strong> только из App Store.<br />
+            2. Скопируйте ключ подписки кнопкой ниже.<br />
+            3. В Incy вставьте ссылку подписки.
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              style={{ background: 'rgba(192, 132, 252, 0.15)', color: '#e9d5ff', border: '1px solid rgba(192, 132, 252, 0.3)' }}
+              onClick={() => handleDownloadApp('incy')}
+            >
+              <Download size={14} /> Скачать Incy из App Store ↗
+            </button>
+            <button
+              className="btn btn-secondary btn-block btn-sm"
+              onClick={() => {
+                haptic('medium');
+                copyLink();
+              }}
+            >
+              <Copy size={14} /> Скопировать ключ для Incy
             </button>
           </div>
         </div>

@@ -34,7 +34,7 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
 
   if (!isOpen) return null;
 
-  const handleDownloadApp = (app: 'happ' | 'v2raytun') => {
+  const handleDownloadApp = (app: 'happ' | 'incy' | 'v2raytun') => {
     haptic('medium');
     const isIos = tg?.platform === 'ios' || /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isAndroid = tg?.platform === 'android' || /android/i.test(navigator.userAgent);
@@ -44,6 +44,8 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
       if (isIos) url = 'https://apps.apple.com/app/id6504287215';
       else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy';
       else url = 'https://happ.su/';
+    } else if (app === 'incy') {
+      url = 'https://apps.apple.com/app/id6478950800';
     } else if (app === 'v2raytun') {
       if (isIos) url = 'https://apps.apple.com/app/id6476628951';
       else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
@@ -221,6 +223,36 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
                   onClick={() => handleDownloadApp('happ')}
                 >
                   <Download size={14} /> Скачать Happ
+                </button>
+              </div>
+
+              {/* Incy Client (iOS / App Store) - 2nd PLACE */}
+              <div
+                className="card"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  padding: '14px 14px',
+                  borderRadius: 16,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>🍎</span>
+                    <span style={{ fontSize: 15, fontWeight: 850, color: '#ffffff' }}>Incy</span>
+                  </div>
+                  <span className="noir-badge noir-badge-dark" style={{ fontSize: 10, color: '#c084fc', border: '1px solid rgba(192, 132, 252, 0.3)' }}>APP STORE</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.35, marginBottom: 10 }}>
+                  Быстрый и удобный VPN-клиент для iOS. Доступен только в App Store.
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-block btn-sm"
+                  style={{ fontSize: 12, padding: '8px 12px', background: 'rgba(192, 132, 252, 0.15)', color: '#e9d5ff', border: '1px solid rgba(192, 132, 252, 0.3)' }}
+                  onClick={() => handleDownloadApp('incy')}
+                >
+                  <Download size={14} /> Скачать Incy из App Store ↗
                 </button>
               </div>
 

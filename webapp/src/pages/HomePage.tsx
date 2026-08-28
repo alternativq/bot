@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import logoImg from '../assets/logo.webp';
 import type { UserProfile } from '../types';
 import { OnboardingModal } from '../components/OnboardingModal';
+import { ShareModal } from '../components/ShareModal';
 import {
   ShieldCheck,
   Copy,
@@ -17,6 +18,7 @@ import {
   ChevronRight,
   Sparkles,
   Gift,
+  Users,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -31,6 +33,7 @@ export function HomePage({ navigate }: HomePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [trialLoading, setTrialLoading] = useState(false);
 
   useEffect(() => {
@@ -213,6 +216,37 @@ export function HomePage({ navigate }: HomePageProps) {
             </div>
           </div>
           <ChevronRight size={18} style={{ color: '#ffffff' }} />
+        </div>
+      </div>
+
+      {/* Share with Friends / Web Trial Banner */}
+      <div
+        className="card card-interactive"
+        style={{
+          marginBottom: 18,
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.16) 0%, rgba(124, 58, 237, 0.06) 100%)',
+          border: '1px solid rgba(139, 92, 246, 0.35)',
+          boxShadow: '0 8px 24px rgba(139, 92, 246, 0.15)',
+        }}
+        onClick={() => {
+          haptic('medium');
+          setShowShareModal(true);
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(139, 92, 246, 0.4)' }}>
+              <Users size={20} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 14, fontWeight: 900, color: '#ffffff' }}>🤝 Поделиться с друзьями</span>
+                <span className="noir-badge" style={{ background: '#8b5cf6', color: '#ffffff', fontSize: 9 }}>БЕЗ TG</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Как получить бесплатный триал на сайте</div>
+            </div>
+          </div>
+          <ChevronRight size={18} style={{ color: '#c084fc' }} />
         </div>
       </div>
 
@@ -410,6 +444,12 @@ export function HomePage({ navigate }: HomePageProps) {
         isOpen={showOnboardingModal}
         onClose={() => setShowOnboardingModal(false)}
         subLink={sub?.sub_link}
+      />
+
+      {/* Share With Friends Web Trial Instruction Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
       />
     </div>
   );
