@@ -33,6 +33,7 @@ export function WebPortalPage() {
   const [copied, setCopied] = useState(false);
   const [tokenCopied, setTokenCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   // Mode State: 'trial' vs 'recover'
   const [mode, setMode] = useState<'trial' | 'recover'>('trial');
@@ -154,7 +155,9 @@ export function WebPortalPage() {
   }
 
   const copyToClipboard = (text: string, isToken: boolean = false) => {
-    navigator.clipboard.writeText(text);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
     if (isToken) {
       setTokenCopied(true);
       setTimeout(() => setTokenCopied(false), 2000);
@@ -164,14 +167,48 @@ export function WebPortalPage() {
     }
   };
 
+  const handleConnectClick = (appUrl: string, subUrl: string) => {
+    // 1. Copy link to clipboard for PC & Mobile fallback
+    copyToClipboard(subUrl);
+    setToastMessage('📋 Ссылка подписки скопирована в буфер обмена!');
+    setTimeout(() => setToastMessage(null), 3000);
+
+    // 2. Open app deep link
+    setTimeout(() => {
+      window.location.href = appUrl;
+    }, 100);
+  };
+
   const rawBrand = config?.brand_name || 'Veilora';
   const brandName = rawBrand.replace(/VPN/gi, '').trim() || 'Veilora';
 
   return (
-    <div className="page" style={{ paddingTop: 20, paddingBottom: 40, maxWidth: 520, margin: '0 auto' }}>
+    <div className="page" style={{ paddingTop: 16, paddingBottom: 36, maxWidth: 460, margin: '0 auto', paddingLeft: 14, paddingRight: 14 }}>
       
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          background: '#10b981',
+          color: '#ffffff',
+          padding: '10px 18px',
+          borderRadius: 20,
+          fontWeight: 800,
+          fontSize: 13,
+          boxShadow: '0 8px 24px rgba(16, 185, 129, 0.4)',
+          textAlign: 'center',
+          maxWidth: '90%'
+        }}>
+          {toastMessage}
+        </div>
+      )}
+
       {/* MODE TOGGLE SWITCH (SIMPLE vs PRO) */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -185,7 +222,7 @@ export function WebPortalPage() {
             type="button"
             onClick={() => toggleMode(false)}
             style={{
-              padding: '7px 16px',
+              padding: '7px 14px',
               borderRadius: 20,
               border: 'none',
               background: !isAdvanced ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'transparent',
@@ -203,7 +240,7 @@ export function WebPortalPage() {
             type="button"
             onClick={() => toggleMode(true)}
             style={{
-              padding: '7px 16px',
+              padding: '7px 14px',
               borderRadius: 20,
               border: 'none',
               background: isAdvanced ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' : 'transparent',
@@ -215,17 +252,17 @@ export function WebPortalPage() {
               boxShadow: isAdvanced ? '0 2px 10px rgba(139, 92, 246, 0.35)' : 'none'
             }}
           >
-            ⚙️ Расширенный (PRO)
+            ⚙️ PRO режим
           </button>
         </div>
       </div>
 
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <div style={{
-          width: 58,
-          height: 58,
-          borderRadius: 18,
+          width: 54,
+          height: 54,
+          borderRadius: 16,
           background: isAdvanced 
             ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(255, 255, 255, 0.05) 100%)'
             : 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(255, 255, 255, 0.05) 100%)',
@@ -233,21 +270,21 @@ export function WebPortalPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 12px',
-          fontSize: 28,
+          margin: '0 auto 10px',
+          fontSize: 26,
           boxShadow: isAdvanced ? '0 8px 24px rgba(139, 92, 246, 0.25)' : '0 8px 24px rgba(16, 185, 129, 0.25)',
           transition: 'all 0.3s ease'
         }}>
           {isAdvanced ? '⚙️' : '⚡'}
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 4px', color: '#ffffff' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px', color: '#ffffff' }}>
           {brandName}
         </h1>
 
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, padding: '0 12px' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, padding: '0 8px', lineHeight: 1.35 }}>
           {isAdvanced 
-            ? 'Расширенная панель управления сетевым протоколом и профилями' 
-            : 'Персональный безопасный доступ в 1 клик'}
+            ? 'Расширенная панель управления сетевым профилем' 
+            : 'Персональный безопасный доступ'}
         </p>
       </div>
 
@@ -260,13 +297,13 @@ export function WebPortalPage() {
         background: 'rgba(255, 255, 255, 0.04)',
         borderRadius: 14,
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        marginBottom: 18
+        marginBottom: 16
       }}>
         <button
           type="button"
           onClick={() => { setMode('trial'); setError(null); }}
           style={{
-            padding: '10px 12px',
+            padding: '10px 10px',
             borderRadius: 10,
             border: 'none',
             background: mode === 'trial' ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
@@ -274,16 +311,17 @@ export function WebPortalPage() {
             fontWeight: 700,
             fontSize: 13,
             cursor: 'pointer',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            minHeight: 42
           }}
         >
-          ✨ {isAdvanced ? 'Новая подписка' : 'Получить доступ'}
+          ✨ {isAdvanced ? 'Новый профиль' : 'Получить доступ'}
         </button>
         <button
           type="button"
           onClick={() => { setMode('recover'); setError(null); }}
           style={{
-            padding: '10px 12px',
+            padding: '10px 10px',
             borderRadius: 10,
             border: 'none',
             background: mode === 'recover' ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
@@ -291,7 +329,8 @@ export function WebPortalPage() {
             fontWeight: 700,
             fontSize: 13,
             cursor: 'pointer',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            minHeight: 42
           }}
         >
           🔍 {isAdvanced ? 'Поиск профиля' : 'Мой ключ'}
@@ -307,7 +346,7 @@ export function WebPortalPage() {
           borderRadius: 14,
           color: '#f87171',
           fontSize: 13,
-          marginBottom: 18,
+          marginBottom: 16,
           lineHeight: 1.45
         }}>
           <div>⚠️ {error}</div>
@@ -327,7 +366,9 @@ export function WebPortalPage() {
                 color: '#ffffff',
                 fontSize: 12,
                 fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                width: '100%',
+                minHeight: 40
               }}
             >
               🔍 Найти ранее созданный профиль
@@ -338,92 +379,73 @@ export function WebPortalPage() {
 
       {/* RESULT VIEW */}
       {result ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           
           {/* SIMPLIFIED RESULT VIEW (Default) */}
           {!isAdvanced ? (
             <div style={{
               background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(19, 19, 24, 0.9) 100%)',
               border: '1px solid rgba(16, 185, 129, 0.35)',
-              borderRadius: 20,
-              padding: 22,
+              borderRadius: 18,
+              padding: 18,
               boxShadow: '0 12px 30px rgba(0,0,0,0.45)'
             }}>
-              <div style={{ textAlign: 'center', marginBottom: 18 }}>
-                <div style={{ fontSize: 42, marginBottom: 6 }}>🎉</div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 6px', color: '#fff' }}>
-                  Подключение успешно создано!
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <div style={{ fontSize: 36, marginBottom: 4 }}>🎉</div>
+                <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 4px', color: '#fff' }}>
+                  Подключение создано!
                 </h3>
-                <p style={{ fontSize: 13, color: '#a7f3d0', margin: 0 }}>
-                  Пробный доступ активен до {new Date(result.period_end).toLocaleDateString('ru-RU')}
+                <p style={{ fontSize: 12, color: '#a7f3d0', margin: 0 }}>
+                  Пробный период активен до {new Date(result.period_end).toLocaleDateString('ru-RU')}
                 </p>
               </div>
 
-              {/* 3-Step Simple Instructions */}
-              <div style={{
-                background: 'rgba(0, 0, 0, 0.35)',
-                borderRadius: 14,
-                padding: 14,
-                marginBottom: 18,
-                border: '1px solid rgba(255, 255, 255, 0.08)'
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#e5e7eb', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  📋 Инструкция за 3 шага:
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, color: '#d1d5db' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ background: '#10b981', color: '#000', borderRadius: '50%', width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11 }}>1</span>
-                    <span>Нажмите зелёную кнопку ниже, чтобы импортировать сервер</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ background: '#10b981', color: '#000', borderRadius: '50%', width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11 }}>2</span>
-                    <span>В приложении нажмите кнопку <strong>«Включить»</strong></span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ background: '#10b981', color: '#000', borderRadius: '50%', width: 22, height: 22, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11 }}>3</span>
-                    <span>Привяжите профиль к Telegram для сохранения</span>
-                  </div>
-                </div>
-              </div>
+              {/* 1-Click Connect Button */}
+              <button
+                type="button"
+                onClick={() => handleConnectClick(result.v2raytun_link, result.sub_link)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '16px 12px',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: '#ffffff',
+                  fontSize: 15,
+                  fontWeight: 800,
+                  borderRadius: 14,
+                  border: 'none',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
+                  marginBottom: 10,
+                  minHeight: 52
+                }}
+              >
+                🚀 Подключить (скопировать ссылку)
+              </button>
 
-              {/* Main Action Launchers */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-                <a
-                  href={result.v2raytun_link}
-                  style={{
-                    display: 'block',
-                    padding: '16px',
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    color: '#ffffff',
-                    fontSize: 15,
-                    fontWeight: 800,
-                    borderRadius: 14,
-                    textAlign: 'center',
-                    textDecoration: 'none',
-                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)'
-                  }}
-                >
-                  🚀 Подключить в 1-клик (v2raytun)
-                </a>
-
-                <a
-                  href={result.happ_link}
-                  style={{
-                    display: 'block',
-                    padding: '13px',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#ffffff',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    borderRadius: 14,
-                    textAlign: 'center',
-                    textDecoration: 'none'
-                  }}
-                >
-                  📱 Подключить через Happ App
-                </a>
-              </div>
+              {/* Copy Link Directly Button */}
+              <button
+                type="button"
+                onClick={() => copyToClipboard(result.sub_link)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '12px',
+                  background: copied ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: copied ? '#34d399' : '#ffffff',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  borderRadius: 12,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  marginBottom: 10,
+                  minHeight: 44
+                }}
+              >
+                {copied ? '✓ Ссылка скопирована!' : '📋 Скопировать ссылку подписки'}
+              </button>
 
               {result.tg_link && (
                 <a
@@ -441,14 +463,15 @@ export function WebPortalPage() {
                     borderRadius: 12,
                     textAlign: 'center',
                     textDecoration: 'none',
-                    marginBottom: 10
+                    marginBottom: 10,
+                    minHeight: 44
                   }}
                 >
                   💬 Привязать к Telegram-боту
                 </a>
               )}
 
-              <div style={{ textAlign: 'center', marginTop: 14 }}>
+              <div style={{ textAlign: 'center', marginTop: 10 }}>
                 <button
                   type="button"
                   onClick={() => toggleMode(true)}
@@ -461,7 +484,7 @@ export function WebPortalPage() {
                     textDecoration: 'underline'
                   }}
                 >
-                  ⚙️ Нужна прямая ссылка или QR-код? Включить Расширенный режим
+                  ⚙️ Нужен QR-код или прямой токен? PRO режим
                 </button>
               </div>
             </div>
@@ -471,29 +494,29 @@ export function WebPortalPage() {
             <div style={{
               background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(19, 19, 24, 0.9) 100%)',
               border: '1px solid rgba(139, 92, 246, 0.35)',
-              borderRadius: 20,
-              padding: 20,
+              borderRadius: 18,
+              padding: 18,
               boxShadow: '0 12px 30px rgba(0,0,0,0.5)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 24 }}>⚙️</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 22 }}>⚙️</span>
                   <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: '#fff' }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: '#fff' }}>
                       Параметры подписки (PRO)
                     </h3>
-                    <p style={{ fontSize: 12, color: '#c084fc', margin: 0 }}>
-                      Статус: Активен до {new Date(result.period_end).toLocaleString('ru-RU')}
+                    <p style={{ fontSize: 11, color: '#c084fc', margin: 0 }}>
+                      До {new Date(result.period_end).toLocaleString('ru-RU')}
                     </p>
                   </div>
                 </div>
                 <span style={{
-                  padding: '4px 10px',
-                  borderRadius: 12,
+                  padding: '3px 8px',
+                  borderRadius: 10,
                   background: 'rgba(16, 185, 129, 0.2)',
                   border: '1px solid rgba(16, 185, 129, 0.4)',
                   color: '#34d399',
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 800
                 }}>
                   ACTIVE
@@ -505,11 +528,11 @@ export function WebPortalPage() {
                 background: 'rgba(0, 0, 0, 0.4)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 12,
-                padding: 12,
-                marginBottom: 14
+                padding: 10,
+                marginBottom: 12
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
                     Публичный токен (Public Token)
                   </span>
                   <button
@@ -527,17 +550,17 @@ export function WebPortalPage() {
                     {tokenCopied ? '✓ Скопировано' : 'Скопировать токен'}
                   </button>
                 </div>
-                <code style={{ fontSize: 12, color: '#f3f4f6', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                <code style={{ fontSize: 11, color: '#f3f4f6', wordBreak: 'break-all', fontFamily: 'monospace' }}>
                   {result.public_token}
                 </code>
               </div>
 
               {/* Subscription Link */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-                  Единая ссылка подписки (Unified Sub URL)
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
+                  Ссылка подписки (Unified Sub URL)
                 </label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 6 }}>
                   <input
                     type="text"
                     readOnly
@@ -547,9 +570,9 @@ export function WebPortalPage() {
                       background: 'rgba(0,0,0,0.5)',
                       border: '1px solid rgba(255,255,255,0.15)',
                       borderRadius: 10,
-                      padding: '10px 12px',
+                      padding: '8px 10px',
                       color: '#fff',
-                      fontSize: 12,
+                      fontSize: 11,
                       fontFamily: 'monospace'
                     }}
                   />
@@ -561,53 +584,56 @@ export function WebPortalPage() {
                       color: copied ? '#ffffff' : '#000000',
                       border: 'none',
                       borderRadius: 10,
-                      padding: '0 14px',
+                      padding: '0 12px',
                       fontWeight: 800,
-                      fontSize: 13,
+                      fontSize: 12,
                       cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.2s'
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    {copied ? 'Скопировано!' : 'Копировать'}
+                    {copied ? '✓' : 'Копировать'}
                   </button>
                 </div>
               </div>
 
               {/* Quick Launch Protocol Buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                <a
-                  href={result.v2raytun_link}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => handleConnectClick(result.v2raytun_link, result.sub_link)}
                   style={{
                     background: 'rgba(255,255,255,0.08)',
                     border: '1px solid rgba(255,255,255,0.15)',
                     color: '#fff',
                     fontSize: 12,
-                    padding: '11px',
+                    padding: '10px',
                     borderRadius: 12,
                     textAlign: 'center',
-                    textDecoration: 'none',
-                    fontWeight: 700
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    minHeight: 40
                   }}
                 >
                   ⚡ v2raytun Protocol
-                </a>
-                <a
-                  href={result.happ_link}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleConnectClick(result.happ_link, result.sub_link)}
                   style={{
                     background: 'rgba(255,255,255,0.08)',
                     border: '1px solid rgba(255,255,255,0.15)',
                     color: '#fff',
                     fontSize: 12,
-                    padding: '11px',
+                    padding: '10px',
                     borderRadius: 12,
                     textAlign: 'center',
-                    textDecoration: 'none',
-                    fontWeight: 700
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    minHeight: 40
                   }}
                 >
                   📱 Happ Protocol
-                </a>
+                </button>
               </div>
 
               {/* Toggle QR Code */}
@@ -619,35 +645,35 @@ export function WebPortalPage() {
                   background: 'rgba(0,0,0,0.3)',
                   border: '1px solid rgba(255,255,255,0.1)',
                   color: 'var(--text-secondary)',
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
                   borderRadius: 10,
                   cursor: 'pointer',
                   padding: '8px 0',
-                  marginBottom: 12
+                  marginBottom: 10
                 }}
               >
-                {showQr ? '▲ Скрыть QR-код' : '📷 Показать QR-код для мобильного импорта'}
+                {showQr ? '▲ Скрыть QR-код' : '📷 Показать QR-код импорта'}
               </button>
 
               {showQr && (
-                <div style={{ textAlign: 'center', marginTop: 8, padding: 14, background: '#fff', borderRadius: 14, marginBottom: 14 }}>
-                  <img src={result.qr_code} alt="QR Code" style={{ width: 180, height: 180, display: 'block', margin: '0 auto 10px' }} />
+                <div style={{ textAlign: 'center', marginTop: 6, padding: 12, background: '#fff', borderRadius: 14, marginBottom: 12 }}>
+                  <img src={result.qr_code} alt="QR Code" style={{ width: 160, height: 160, display: 'block', margin: '0 auto 8px' }} />
                   <a
                     href={result.qr_code}
                     download="veilora-qr.png"
                     style={{
                       display: 'inline-block',
-                      padding: '6px 14px',
+                      padding: '6px 12px',
                       background: '#111827',
                       color: '#ffffff',
                       borderRadius: 8,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 700,
                       textDecoration: 'none'
                     }}
                   >
-                    💾 Скачать QR-код (PNG)
+                    💾 Скачать QR (PNG)
                   </a>
                 </div>
               )}
@@ -660,17 +686,18 @@ export function WebPortalPage() {
                   rel="noopener noreferrer"
                   style={{
                     display: 'block',
-                    padding: '12px',
+                    padding: '11px',
                     background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
                     color: '#ffffff',
                     fontSize: 13,
                     fontWeight: 800,
                     borderRadius: 12,
                     textAlign: 'center',
-                    textDecoration: 'none'
+                    textDecoration: 'none',
+                    minHeight: 42
                   }}
                 >
-                  💬 Авторизовать профиль в Telegram
+                  💬 Авторизовать в Telegram
                 </a>
               )}
             </div>
@@ -684,12 +711,13 @@ export function WebPortalPage() {
               background: 'transparent',
               border: '1px solid rgba(255, 255, 255, 0.15)',
               color: 'var(--text-secondary)',
-              padding: '12px',
+              padding: '10px',
               borderRadius: 12,
               fontWeight: 600,
               fontSize: 13,
               cursor: 'pointer',
-              marginTop: 4
+              marginTop: 2,
+              minHeight: 42
             }}
           >
             ← Вернуться назад
@@ -701,34 +729,34 @@ export function WebPortalPage() {
         <div style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--glass-border)',
-          borderRadius: 20,
-          padding: 20,
+          borderRadius: 18,
+          padding: 18,
           backdropFilter: 'var(--glass-blur)'
         }}>
           {/* Form Header */}
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 14 }}>
             <span style={{
               display: 'inline-block',
-              padding: '4px 10px',
+              padding: '3px 8px',
               borderRadius: 20,
               background: !isAdvanced ? 'rgba(16, 185, 129, 0.15)' : 'rgba(139, 92, 246, 0.2)',
               border: !isAdvanced ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(139, 92, 246, 0.3)',
               color: !isAdvanced ? '#34d399' : '#c084fc',
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 800,
-              marginBottom: 8
+              marginBottom: 6
             }}>
               {isAdvanced ? '⚙️ PRO ТАРИФ: TRIAL' : '🌱 ПРОСТОЙ ДОСТУП'}
             </span>
-            <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 6px', color: '#fff' }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 4px', color: '#fff' }}>
               {isAdvanced 
-                ? `Генерация тестовой подписки (${config?.trial_duration_days || 2} дня)` 
-                : `Получить доступ в 1 клик`}
+                ? `Генерация подписки (${config?.trial_duration_days || 2} дн.)` 
+                : `Получить доступ`}
             </h3>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
               {isAdvanced 
-                ? 'Формирование нового протокола с изоляцией IP и автоматической выдачей токена.'
-                : 'Нажмите кнопку ниже для быстрого подключения на вашем устройстве.'}
+                ? 'Формирование протокола с автоматической выдачей токена.'
+                : 'Нажмите кнопку ниже для получения подключения.'}
             </p>
           </div>
 
@@ -737,15 +765,15 @@ export function WebPortalPage() {
             <div style={{
               background: 'rgba(0, 0, 0, 0.35)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 14,
-              padding: 14,
-              marginBottom: 16
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 14
             }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
                 🛡 Проверка безопасности:
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', minWidth: 110 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', minWidth: 100 }}>
                   {captcha ? captcha.question : 'Загрузка...'}
                 </span>
                 <input
@@ -757,11 +785,12 @@ export function WebPortalPage() {
                     flex: 1,
                     background: 'rgba(255, 255, 255, 0.08)',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: 10,
-                    padding: '8px 12px',
+                    borderRadius: 8,
+                    padding: '8px 10px',
                     color: '#fff',
-                    fontSize: 14,
-                    outline: 'none'
+                    fontSize: 15,
+                    outline: 'none',
+                    minHeight: 40
                   }}
                   required
                 />
@@ -773,20 +802,21 @@ export function WebPortalPage() {
               disabled={loading || !captcha}
               style={{
                 width: '100%',
-                padding: '14px',
+                padding: '14px 10px',
                 background: !isAdvanced ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#ffffff',
                 color: !isAdvanced ? '#ffffff' : '#000000',
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 800,
                 borderRadius: 14,
                 border: 'none',
                 cursor: loading ? 'wait' : 'pointer',
                 boxShadow: !isAdvanced ? '0 4px 16px rgba(16, 185, 129, 0.3)' : '0 4px 16px rgba(255, 255, 255, 0.2)',
                 opacity: loading ? 0.7 : 1,
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                minHeight: 48
               }}
             >
-              {loading ? 'Генерация...' : isAdvanced ? '⚙️ Сгенерировать ключ' : '🚀 Получить доступ в 1 клик'}
+              {loading ? 'Генерация...' : isAdvanced ? '⚙️ Сгенерировать ключ' : '🚀 Получить доступ'}
             </button>
           </form>
         </div>
@@ -796,14 +826,14 @@ export function WebPortalPage() {
         <div style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--glass-border)',
-          borderRadius: 20,
-          padding: 20,
+          borderRadius: 18,
+          padding: 18,
           backdropFilter: 'var(--glass-blur)'
         }}>
-          <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 6px', color: '#fff' }}>
-            {isAdvanced ? 'Восстановление по токену / ссылке' : 'Найти мой ключ'}
+          <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 4px', color: '#fff' }}>
+            {isAdvanced ? 'Восстановление подписки' : 'Найти мой ключ'}
           </h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px', lineHeight: 1.45 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.4 }}>
             Введите токен или ссылку вашей подписки для загрузки настроек.
           </p>
 
@@ -817,12 +847,13 @@ export function WebPortalPage() {
                 width: '100%',
                 background: 'rgba(0, 0, 0, 0.35)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: 12,
-                padding: '12px 14px',
+                borderRadius: 10,
+                padding: '10px 12px',
                 color: '#fff',
-                fontSize: 13,
+                fontSize: 14,
                 outline: 'none',
-                marginBottom: 16
+                marginBottom: 14,
+                minHeight: 42
               }}
               required
             />
@@ -831,14 +862,15 @@ export function WebPortalPage() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '14px',
+                padding: '12px',
                 background: '#ffffff',
                 color: '#000000',
                 fontSize: 14,
                 fontWeight: 800,
-                borderRadius: 14,
+                borderRadius: 12,
                 border: 'none',
-                cursor: loading ? 'wait' : 'pointer'
+                cursor: loading ? 'wait' : 'pointer',
+                minHeight: 46
               }}
             >
               {loading ? 'Поиск...' : '🔍 Найти профиль'}
@@ -846,49 +878,6 @@ export function WebPortalPage() {
           </form>
         </div>
       )}
-
-      {/* DOWNLOAD APPS GUIDE */}
-      <div style={{ marginTop: 24 }}>
-        <h4 style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          📱 Поддерживаемые клиенты (Android)
-        </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: isAdvanced ? '1fr 1fr' : '1fr 1fr', gap: 10 }}>
-          <a
-            href="https://play.google.com/store/apps/details?id=com.v2raytun.android"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 14,
-              padding: 12,
-              color: '#fff',
-              textDecoration: 'none',
-              fontSize: 12,
-              fontWeight: 600
-            }}
-          >
-            🤖 <strong>v2raytun</strong> (Android)
-          </a>
-          <a
-            href="https://play.google.com/store/apps/details?id=com.happproxy"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 14,
-              padding: 12,
-              color: '#fff',
-              textDecoration: 'none',
-              fontSize: 12,
-              fontWeight: 600
-            }}
-          >
-            🤖 <strong>Happ App</strong> (Android)
-          </a>
-        </div>
-      </div>
 
     </div>
   );
