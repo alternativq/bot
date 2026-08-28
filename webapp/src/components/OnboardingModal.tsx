@@ -45,7 +45,7 @@ export function OnboardingModal({ isOpen, onClose, subLink }: OnboardingModalPro
       else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.happproxy';
       else url = 'https://happ.su/';
     } else if (app === 'incy') {
-      url = 'https://apps.apple.com/app/id6478950800';
+      url = 'https://apps.apple.com/us/app/incy/id6756943388';
     } else if (app === 'v2raytun') {
       if (isIos) url = 'https://apps.apple.com/app/id6476628951';
       else if (isAndroid) url = 'https://play.google.com/store/apps/details?id=com.v2raytun.android';
