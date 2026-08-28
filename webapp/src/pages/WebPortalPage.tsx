@@ -34,6 +34,7 @@ export function WebPortalPage() {
   const [tokenCopied, setTokenCopied] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Mode State: 'trial' vs 'recover'
   const [mode, setMode] = useState<'trial' | 'recover'>('trial');
@@ -168,12 +169,10 @@ export function WebPortalPage() {
   };
 
   const handleConnectClick = (appUrl: string, subUrl: string) => {
-    // 1. Copy link to clipboard for PC & Mobile fallback
     copyToClipboard(subUrl);
     setToastMessage('📋 Ссылка подписки скопирована в буфер обмена!');
     setTimeout(() => setToastMessage(null), 3000);
 
-    // 2. Open app deep link
     setTimeout(() => {
       window.location.href = appUrl;
     }, 100);
@@ -204,6 +203,109 @@ export function WebPortalPage() {
           maxWidth: '90%'
         }}>
           {toastMessage}
+        </div>
+      )}
+
+      {/* SHARE MODAL FOR FRIENDS */}
+      {showShareModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(6px)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16
+        }}>
+          <div style={{
+            background: '#13131a',
+            border: '1px solid rgba(139, 92, 246, 0.4)',
+            borderRadius: 22,
+            padding: 22,
+            maxWidth: 420,
+            width: '100%',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: 0 }}>
+                🤝 Как поделиться с друзьями
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: 20, cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.45, marginBottom: 14 }}>
+              Вашим знакомым <strong>не нужен Telegram-бот</strong> для получения пробного периода! Они могут сделать это за 10 секунд прямо на сайте:
+            </p>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: 14,
+              marginBottom: 16
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#10b981', marginBottom: 10, textTransform: 'uppercase' }}>
+                💡 Понятная инструкция для друга:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, color: '#e5e7eb' }}>
+                <div><strong>1. Перейдите на сайт:</strong> <code>mindmorow.com.ru</code></div>
+                <div><strong>2. Решите пример:</strong> укажите простой ответ на математическую капчу</div>
+                <div><strong>3. Нажмите «Получить доступ»:</strong> ваш пробный ключ активируется мгновенно!</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                copyToClipboard('https://mindmorow.com.ru/');
+                setToastMessage('📋 Ссылка сайта для друзей скопирована!');
+                setTimeout(() => setToastMessage(null), 3000);
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                color: '#ffffff',
+                fontSize: 14,
+                fontWeight: 800,
+                borderRadius: 14,
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(139, 92, 246, 0.4)',
+                marginBottom: 10
+              }}
+            >
+              📋 Скопировать ссылку для отправки другу
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowShareModal(false)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                border: 'none',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Понятно, закрыть
+            </button>
+          </div>
         </div>
       )}
 
@@ -258,7 +360,7 @@ export function WebPortalPage() {
       </div>
 
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 18 }}>
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
         <div style={{
           width: 54,
           height: 54,
@@ -287,6 +389,31 @@ export function WebPortalPage() {
             : 'Персональный безопасный доступ'}
         </p>
       </div>
+
+      {/* BUTTON: SHARE WITH FRIENDS */}
+      <button
+        type="button"
+        onClick={() => setShowShareModal(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          width: '100%',
+          padding: '9px 12px',
+          background: 'rgba(139, 92, 246, 0.12)',
+          border: '1px solid rgba(139, 92, 246, 0.3)',
+          borderRadius: 14,
+          color: '#c084fc',
+          fontSize: 12,
+          fontWeight: 700,
+          cursor: 'pointer',
+          marginBottom: 14,
+          transition: 'all 0.2s'
+        }}
+      >
+        🤝 Как поделиться с друзьями без Telegram?
+      </button>
 
       {/* Navigation Tabs */}
       <div style={{
@@ -878,6 +1005,101 @@ export function WebPortalPage() {
           </form>
         </div>
       )}
+
+      {/* SUPPORTED APPS LIST */}
+      <div style={{ marginTop: 22 }}>
+        <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          📱 Приложения для подключения
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* 1. v2raytun (Android) */}
+          <a
+            href="https://play.google.com/store/apps/details?id=com.v2raytun.android"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: 13,
+              fontWeight: 600
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>🤖</span>
+              <div>
+                <div style={{ fontWeight: 800 }}>v2raytun</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Google Play (Android)</div>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, color: '#34d399', fontWeight: 700 }}>Скачать ↗</span>
+          </a>
+
+          {/* 2. Incy (iOS / App Store) - SECOND PLACE */}
+          <a
+            href="https://apps.apple.com/app/id6478950800"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: 13,
+              fontWeight: 600
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>🍎</span>
+              <div>
+                <div style={{ fontWeight: 800 }}>Incy</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>App Store (iOS)</div>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, color: '#c084fc', fontWeight: 700 }}>Скачать из App Store ↗</span>
+          </a>
+
+          {/* 3. Happ App (Android) */}
+          <a
+            href="https://play.google.com/store/apps/details?id=com.happproxy"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: '12px 14px',
+              color: '#fff',
+              textDecoration: 'none',
+              fontSize: 13,
+              fontWeight: 600
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18 }}>🤖</span>
+              <div>
+                <div style={{ fontWeight: 800 }}>Happ App</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Google Play (Android)</div>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, color: '#34d399', fontWeight: 700 }}>Скачать ↗</span>
+          </a>
+        </div>
+      </div>
 
     </div>
   );
