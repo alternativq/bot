@@ -35,7 +35,8 @@ async def cors_middleware(request: web.Request, handler: Callable) -> web.Stream
         except web.HTTPException as exc:
             response = exc
 
-    allowed_origin = settings.MINIAPP_URL or "*"
+    origin = request.headers.get("Origin")
+    allowed_origin = origin if origin else "*"
     response.headers["Access-Control-Allow-Origin"] = allowed_origin
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
