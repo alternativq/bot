@@ -22,7 +22,7 @@ export function ShareModal({ isOpen, onClose }: ShareModalProps) {
 
   if (!isOpen) return null;
 
-  const websiteUrl = 'https://mindmorow.com.ru/';
+  const websiteUrl = 'https://webmorow.ru/';
 
   const handleCopyLink = async () => {
     haptic('medium');
@@ -153,7 +153,7 @@ export function ShareModal({ isOpen, onClose }: ShareModalProps) {
               1
             </div>
             <div>
-              <strong>Перейти на сайт:</strong> <code style={{ color: '#c084fc', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: 6 }}>mindmorow.com.ru</code>
+              <strong>Перейти на сайт:</strong> <code style={{ color: '#c084fc', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: 6 }}>https://webmorow.ru/</code>
             </div>
           </div>
 
